@@ -7,7 +7,7 @@ then
   echo "BUILD FAILED - NOT DEPLOYING"
   exit 1
 fi
- d
+
 git checkout gh-pages
 
 git checkout master -- deployFileList
