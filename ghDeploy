@@ -2,11 +2,11 @@
 
 #./build
 
-if [ $? -ne 0 ]
-then
-  echo "BUILD FAILED - NOT DEPLOYING"
-  exit 1
-fi
+#if [ $? -ne 0 ]
+#then
+#  echo "BUILD FAILED - NOT DEPLOYING"
+#  exit 1
+#fi
 
 git checkout gh-pages
 
