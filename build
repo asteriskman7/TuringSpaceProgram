@@ -19,22 +19,97 @@ do
     (( RC = RC + STEP_RC ))
     ;;
   js)
+    /usr/bin/jshint $f
+    STEP_RC=$?
+    (( RC = RC + STEP_RC ))
     ;;
   json)
+    echo "Validating $f"
+    cat $f | json_verify
+    STEP_RC=$?
+    (( RC = RC + STEP_RC ))
     ;;
   *)
+    echo "WARNING: UNKNOWN FILE TYPE $ext"
     ;;
   esac
 
 done
 
-#generate derived files from source
-#return exit code of 0 if everything works
 
 if [ $RC -ne 0 ]
 then
+  echo ""
   echo "BUILD FAILED. SEE PREVIOUS MESSAGES"
   exit $RC
-fi
+else
+  echo "VALIDATION SUCCESS"
+  echo "BUILD START"
+  #generate derived files from source
 
-exit 0
+
+  #combine all js files into single file
+  CONCATJSFILE=concat.js
+  rm concat.js
+
+  for f in `cat buildFileList`
+  do
+
+    ext=`echo $f | awk -F . '{print $NF}'`
+    if [ $ext == "js" ]
+    then
+      echo "" >> $CONCATJSFILE
+      cat $f >> $CONCATJSFILE
+    fi
+
+  done
+
+  #minify js file
+  MINJSFILE=min.js
+  rm $MINJSFILE
+
+  /usr/bin/minify $CONCATJSFILE > $MINJSFILE  
+
+  if [ $? -ne 0 ]
+  then
+    echo "JS MINIFI FAILED"
+    exit 1
+  fi             
+
+  rm $CONCATJSFILE
+
+
+  #combine all css files into single file
+  CONCATCSSFILE=concat.css
+  rm concat.css
+
+  for f in `cat buildFileList`
+  do
+
+    ext=`echo $f | awk -F . '{print $NF}'`
+    if [ $ext == "css" ]
+    then
+      echo "" >> $CONCATCSSFILE
+      cat $f >> $CONCATCSSFILE
+    fi
+
+  done
+
+  #minify css file
+  MINCSSFILE=min.css
+  rm $MINCSSFILE
+
+  /usr/bin/minify $CONCATCSSFILE > $MINCSSFILE
+
+  if [ $? -ne 0 ]
+  then
+    echo "CSS MINIFI FAILED"
+    exit 1
+  fi             
+
+  rm $CONCATCSSFILE
+
+  echo ""
+  echo "BUILD SUCCESS"  
+  exit 0
+fi
