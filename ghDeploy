@@ -2,6 +2,8 @@
 
 git checkout gh-pages
 
+git checkout master -- deployFileList
+
 cat deployFileList | xargs --max-args=1 git checkout master --
 
 #this line will require manual intervention to add a comment
