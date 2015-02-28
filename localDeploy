@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-./build
+if [ "$1" == "-f" ]
+then
+  ./build -f
+else
+  ./build
+fi
 
 if [ $? -ne 0 ]
 then

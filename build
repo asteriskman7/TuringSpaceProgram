@@ -2,40 +2,46 @@
 
 RC=0
 
-for f in `cat buildFileList`
-do
+if [ "$1" == "-f" ]
+then
+  echo "WARNING: VALIDATION SKIPPED"
+else
 
-  ext=`echo $f | awk -F . '{print $NF}'`
+  for f in `cat buildFileList`
+  do
   
-  case $ext in 
-  html)
-    python /home/asteriskman/bin/w3c-validator.py $f
-    STEP_RC=$?
-    (( RC = RC + STEP_RC ))
-    ;;
-  css)
-    python /home/asteriskman/bin/w3c-validator.py $f
-    STEP_RC=$?
-    (( RC = RC + STEP_RC ))
-    ;;
-  js)
-    /usr/bin/jshint $f
-    STEP_RC=$?
-    (( RC = RC + STEP_RC ))
-    ;;
-  json)
-    echo "Validating $f"
-    cat $f | json_verify
-    STEP_RC=$?
-    (( RC = RC + STEP_RC ))
-    ;;
-  *)
-    echo "WARNING: UNKNOWN FILE TYPE $ext"
-    ;;
-  esac
+    ext=`echo $f | awk -F . '{print $NF}'`
+    
+    case $ext in 
+    html)
+      python /home/asteriskman/bin/w3c-validator.py $f
+      STEP_RC=$?
+      (( RC = RC + STEP_RC ))
+      ;;
+    css)
+      python /home/asteriskman/bin/w3c-validator.py $f
+      STEP_RC=$?
+      (( RC = RC + STEP_RC ))
+      ;;
+    js)
+      /usr/bin/jshint $f
+      STEP_RC=$?
+      (( RC = RC + STEP_RC ))
+      ;;
+    json)
+      echo "Validating $f"
+      cat $f | json_verify
+      STEP_RC=$?
+      (( RC = RC + STEP_RC ))
+      ;;
+    *)
+      echo "WARNING: UNKNOWN FILE TYPE $ext"
+      ;;
+    esac
+  
+  done
 
-done
-
+fi
 
 if [ $RC -ne 0 ]
 then
@@ -50,7 +56,7 @@ else
 
   #combine all js files into single file
   CONCATJSFILE=concat.js
-  rm concat.js
+  rm -f $CONCATJSFILE
 
   for f in `cat buildFileList`
   do
@@ -81,7 +87,7 @@ else
 
   #combine all css files into single file
   CONCATCSSFILE=concat.css
-  rm concat.css
+  rm -f $CONCATCSSFILE
 
   for f in `cat buildFileList`
   do
