@@ -1,6 +1,40 @@
 #!/usr/bin/env bash
 
+RC=0
+
+for f in `cat buildFileList`
+do
+
+  ext=`echo $f | awk -F . '{print $NF}'`
+  
+  case $ext in 
+  html)
+    python /home/asteriskman/bin/w3c-validator.py $f
+    STEP_RC=$?
+    (( RC = RC + STEP_RC ))
+    ;;
+  css)
+    python /home/asteriskman/bin/w3c-validator.py $f
+    STEP_RC=$?
+    (( RC = RC + STEP_RC ))
+    ;;
+  js)
+    ;;
+  json)
+    ;;
+  *)
+    ;;
+  esac
+
+done
+
 #generate derived files from source
 #return exit code of 0 if everything works
+
+if [ $RC -ne 0 ]
+then
+  echo "BUILD FAILED. SEE PREVIOUS MESSAGES"
+  exit $RC
+fi
 
 exit 0
