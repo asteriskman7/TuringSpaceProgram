@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+git checkout gh-pages
+
+cat deployFileList | xargs --max-args=1 git checkout master --
+
+#this line will require manual intervention to add a comment
+git commit
+
+#this line will require username and password
+git push
+
+git checkout master

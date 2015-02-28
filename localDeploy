@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+DEST=/var/www/html/TSP
+
+rm $DEST/*
+
+cat deployFileList | xargs -I{} cp -v {} $DEST
+
