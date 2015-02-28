@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+./build
+
+if [ $? -ne 0 ]
+then
+  echo "BUILD FAILED - NOT DEPLOYING"
+  exit 1
+fi
+
 DEST=/var/www/html/TSP
 
 rm $DEST/*

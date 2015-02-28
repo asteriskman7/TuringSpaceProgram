@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+#generate derived files from source
+#return exit code of 0 if everything works
+
+exit 0
