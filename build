@@ -64,6 +64,7 @@ else
     ext=`echo $f | awk -F . '{print $NF}'`
     if [ $ext == "js" ]
     then
+      echo "Including $f"
       echo "" >> $CONCATJSFILE
       cat $f >> $CONCATJSFILE
     fi
@@ -80,6 +81,8 @@ else
   then
     echo "JS MINIFI FAILED"
     exit 1
+  else
+    echo "Built $CONCATJSFILE"
   fi             
 
   rm $CONCATJSFILE
@@ -95,6 +98,7 @@ else
     ext=`echo $f | awk -F . '{print $NF}'`
     if [ $ext == "css" ]
     then
+      echo "Including $f"
       echo "" >> $CONCATCSSFILE
       cat $f >> $CONCATCSSFILE
     fi
@@ -111,6 +115,8 @@ else
   then
     echo "CSS MINIFI FAILED"
     exit 1
+  else
+    echo "Built $CONCATCSSFILE"
   fi             
 
   rm $CONCATCSSFILE
