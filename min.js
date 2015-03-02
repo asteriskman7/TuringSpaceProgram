@@ -1,1 +1,1 @@
-"use strict";console.log("JS Loaded");var cpu={};
+"use strict";function Cpu(){this.pc=0,this.sp=0,this.regs=[0,0,0,0,0,0,0,0],this.ram=[0,1,2,3,4,5,6,7]}var main={init:function(){console.log("main.init")}};window.onload=main.init,console.log("JS Loaded"),Cpu.prototype.tick=function(){var i=this.ram[this.pc];this.regs[0]=i,this.pc=this.pc+1&65535};
