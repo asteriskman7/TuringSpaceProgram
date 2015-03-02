@@ -82,7 +82,7 @@ else
     echo "JS MINIFI FAILED"
     exit 1
   else
-    echo "Built $CONCATJSFILE"
+    echo "Built $MINJSFILE"
   fi             
 
   rm $CONCATJSFILE
@@ -116,7 +116,7 @@ else
     echo "CSS MINIFI FAILED"
     exit 1
   else
-    echo "Built $CONCATCSSFILE"
+    echo "Built $MINCSSFILE"
   fi             
 
   rm $CONCATCSSFILE
