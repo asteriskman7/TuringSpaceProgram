@@ -5,6 +5,8 @@ DEST=/var/www/html/TSP/test
 
 rm $DEST/*
 
+mkdir $DEST
+
 cp -v *.html $DEST
 cp -v *.js $DEST
 cp -v *.css $DEST
