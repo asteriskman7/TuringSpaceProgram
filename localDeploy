@@ -15,7 +15,7 @@ fi
 
 DEST=/var/www/html/TSP
 
-rm $DEST/*
+rm -r $DEST/*
 
 cat deployFileList | xargs -I{} cp -v {} $DEST
 
