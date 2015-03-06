@@ -65,6 +65,12 @@ Cpu.prototype.tick = function() {
 
   var pcJump = false;
   var ramAddr;
+  var rawResult;
+  var finalResult;
+  var zeroFlag;
+  var negFlag;
+  var carryFlag;
+  var bVal;
 
   switch (opClass) {
     case 0x0000: //load/store
@@ -107,6 +113,130 @@ Cpu.prototype.tick = function() {
     case 0x1000: //IO
       break;
     case 0x2000: //ALU
+      switch (opCmd) {
+        case 0x0000: //add
+          rawResult = this.regs[opArgA] + this.regs[opArgB];
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = (rawResult & 0x10000) === 0x10000;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0100: //addc
+          rawResult = this.regs[opArgA] + opArgB;
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = (rawResult & 0x10000) === 0x10000;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0200: //sub
+          rawResult = this.regs[opArgA] - this.regs[opArgB];
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = (rawResult & 0x10000) === 0x10000;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0300: //subc
+          rawResult = this.regs[opArgA] - opArgB;
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = (rawResult & 0x10000) === 0x10000;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0400: //and
+          rawResult = this.regs[opArgA] & this.regs[opArgB];
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = (rawResult & 0x10000) === 0x10000;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0500: //or
+          rawResult = this.regs[opArgA] | this.regs[opArgB];
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = (rawResult & 0x10000) === 0x10000;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0600: //xor
+          rawResult = this.regs[opArgA] ^ this.regs[opArgB];
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = (rawResult & 0x10000) === 0x10000;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0700: //not
+          rawResult = ~this.regs[opArgA];
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = 0;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0800: //sftr
+          bVal = this.regs[opArgB];
+          if (bVal > 15) {
+            rawResult = 0;
+          } else {
+            rawResult = this.regs[opArgA] >>> this.regs[opArgB];
+          }
+          
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = 0;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0900: //sftrs
+          bVal = this.regs[opArgB];
+          if (bVal > 15) {
+            rawResult = 0;
+          } else {
+            rawResult = this.regs[opArgA] >> this.regs[opArgB];
+          }
+          if ((this.regs[opArgA] & 0x8000) === 0x8000) {
+            rawResult = (rawResult | (0xFFFF0000 >> bVal)) & 0xFFFF;
+          }
+          
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          carryFlag = 0;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        case 0x0A00: //sftl
+          if (bVal > 15) {
+            rawResult = 0;
+            carryFlag = (this.regs[opArgA] !== 0);
+          } else {
+            rawResult = this.regs[opArgA] << this.regs[opArgB];
+            carryFlag = (rawResult & 0xFFFF0000) !== 0;
+          }
+          
+          finalResult = rawResult & 0xFFFF;
+          this.regs[0] = finalResult;
+          zeroFlag = finalResult === 0;
+          negFlag = (finalResult & 0x8000) === 0x8000;
+          this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+          break;
+        default:
+          this.opcodeError(opcode);
+      }
       break;
     case 0x3000: //JUMP
       break;

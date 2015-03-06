@@ -4,6 +4,7 @@ var Cpu = require('../cpu.js');
 var dut = new Cpu();
 
 var seed = Math.floor(Math.random() * 10000);
+//seed = 9342;
 
 function sinrnd() {
   var x = Math.sin(seed++) * 10000;
@@ -291,6 +292,499 @@ describe('Cpu', function() {
     });
 
   }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('add ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit();
+      var regA = rnd16bit() & 0x0007;
+      var regB = rnd16bit() & 0x0007;
+      if (regB === regA) {bVal = aVal;}
+      if (regA === 0) {aVal = origVal;}
+      if (regB === 0) {bVal = origVal;}
+      var expectedVal = (aVal + bVal) & 0xFFFF;
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = (((aVal + bVal) & 0x10000) === 0x10000)|0
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.regs[regB] = bVal;
+        dut.ram[0] = 0x2000 | (regA << 4) | (regB);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expB + ' in Reg' + regB, function() {
+        assert.equal(dut.regs[regB], expB);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('addc ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit() & 0x000F;
+      var regA = rnd16bit() & 0x0007;
+      if (regA === 0) {aVal = origVal;}
+      var expectedVal = (aVal + bVal) & 0xFFFF;
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = (((aVal + bVal) & 0x10000) === 0x10000)|0
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.ram[0] = 0x2100 | (regA << 4) | (bVal);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('sub ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit();
+      var regA = rnd16bit() & 0x0007;
+      var regB = rnd16bit() & 0x0007;
+      if (regB === regA) {bVal = aVal;}
+      if (regA === 0) {aVal = origVal;}
+      if (regB === 0) {bVal = origVal;}
+      var expectedVal = (aVal - bVal) & 0xFFFF;
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = (((aVal - bVal) & 0x10000) === 0x10000)|0
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.regs[regB] = bVal;
+        dut.ram[0] = 0x2200 | (regA << 4) | (regB);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expB + ' in Reg' + regB, function() {
+        assert.equal(dut.regs[regB], expB);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('subc ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit() & 0x000F;
+      var regA = rnd16bit() & 0x0007;
+      if (regA === 0) {aVal = origVal;}
+      var expectedVal = (aVal - bVal) & 0xFFFF;
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = (((aVal + bVal) & 0x10000) === 0x10000)|0
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.ram[0] = 0x2300 | (regA << 4) | (bVal);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('and ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit();
+      var regA = rnd16bit() & 0x0007;
+      var regB = rnd16bit() & 0x0007;
+      if (regB === regA) {bVal = aVal;}
+      if (regA === 0) {aVal = origVal;}
+      if (regB === 0) {bVal = origVal;}
+      var expectedVal = (aVal & bVal);
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = (((aVal & bVal) & 0x10000) === 0x10000)|0
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.regs[regB] = bVal;
+        dut.ram[0] = 0x2400 | (regA << 4) | (regB);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expB + ' in Reg' + regB, function() {
+        assert.equal(dut.regs[regB], expB);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('or ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit();
+      var regA = rnd16bit() & 0x0007;
+      var regB = rnd16bit() & 0x0007;
+      if (regB === regA) {bVal = aVal;}
+      if (regA === 0) {aVal = origVal;}
+      if (regB === 0) {bVal = origVal;}
+      var expectedVal = (aVal | bVal);
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = (((aVal | bVal) & 0x10000) === 0x10000)|0
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.regs[regB] = bVal;
+        dut.ram[0] = 0x2500 | (regA << 4) | (regB);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expB + ' in Reg' + regB, function() {
+        assert.equal(dut.regs[regB], expB);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('xor ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit();
+      var regA = rnd16bit() & 0x0007;
+      var regB = rnd16bit() & 0x0007;
+      if (regB === regA) {bVal = aVal;}
+      if (regA === 0) {aVal = origVal;}
+      if (regB === 0) {bVal = origVal;}
+      var expectedVal = (aVal ^ bVal);
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = (((aVal ^ bVal) & 0x10000) === 0x10000)|0
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.regs[regB] = bVal;
+        dut.ram[0] = 0x2600 | (regA << 4) | (regB);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expB + ' in Reg' + regB, function() {
+        assert.equal(dut.regs[regB], expB);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('not ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var regA = rnd16bit() & 0x0007;
+      if (regA === 0) {aVal = origVal;}
+      var expectedVal = (~aVal) & 0xFFFF;
+      var expA;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = 0;
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.ram[0] = 0x2700 | (regA << 4);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('sftr ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit() & 0x001F;
+      var regA = rnd16bit() & 0x0007;
+      var regB = rnd16bit() & 0x0007;
+      if (regB === regA) {aVal = bVal;}
+      if (regA === 0) {aVal = origVal;}
+      if (regB === 0) {bVal = origVal;}
+      var expectedVal;
+      if (bVal > 15) {
+        expectedVal = 0;
+      } else {
+        expectedVal = (aVal >>> bVal);
+      }
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = 0;
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.regs[regB] = bVal;
+        dut.ram[0] = 0x2800 | (regA << 4) | (regB);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expB + ' in Reg' + regB, function() {
+        assert.equal(dut.regs[regB], expB);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('sftrs ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit() & 0x001F;
+      var regA = rnd16bit() & 0x0007;
+      var regB = rnd16bit() & 0x0007;
+      if (regB === regA) {aVal = bVal;}
+      if (regA === 0) {aVal = origVal;}
+      if (regB === 0) {bVal = origVal;}
+      var expectedVal;
+      if (bVal > 15) {
+        expectedVal = 0;
+      } else {
+        expectedVal = (aVal >>> bVal);
+      }
+      if ( (aVal & 0x8000) === 0x8000) {
+        //must sign extend
+        //the bval msb must be set to 1
+        expectedVal = (expectedVal | (0xFFFF0000 >> bVal)) & 0xFFFF;
+      }
+      console.log(aVal + ' >> ' + bVal + ' = ' + expectedVal);
+
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = 0;
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.regs[regB] = bVal;
+        dut.ram[0] = 0x2900 | (regA << 4) | (regB);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expB + ' in Reg' + regB, function() {
+        assert.equal(dut.regs[regB], expB);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('sftl ('+i+')', function() {
+      var origVal = rnd16bit();
+      var aVal = rnd16bit();
+      var bVal = rnd16bit() & 0x001F;
+      var regA = rnd16bit() & 0x0007;
+      var regB = rnd16bit() & 0x0007;
+      if (regB === regA) {aVal = bVal;}
+      if (regA === 0) {aVal = origVal;}
+      if (regB === 0) {bVal = origVal;}
+      var expectedVal;
+      if (bVal > 15) {
+        expectedVal = 0;
+      } else {
+        expectedVal = (aVal << bVal) & 0xFFFF;
+      }
+
+      var expA;
+      var expB;
+      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
+      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
+
+      var zeroFlag = (expectedVal === 0)|0;
+      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
+      var carryFlag = ((aVal << bVal) & 0xFFFF0000) !== 0;
+      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
+      before(function() {
+        dut = new Cpu();
+        dut.regs[0] = origVal;
+        dut.regs[regA] = aVal;
+        dut.regs[regB] = bVal;
+        dut.ram[0] = 0x2A00 | (regA << 4) | (regB);
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
+        assert.equal(dut.regs[0], expectedVal);
+      });
+      it('should contain ' + expA + ' in Reg' + regA, function() {
+        assert.equal(dut.regs[regA], expA);
+      });
+      it('should contain ' + expB + ' in Reg' + regB, function() {
+        assert.equal(dut.regs[regB], expB);
+      });
+      it('should contain ' + expectedFlag + ' in AF', function() {
+        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
+      });
+    });
+
+  }
+
 
 });
 
