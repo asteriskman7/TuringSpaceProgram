@@ -12,5 +12,6 @@ Possible scenarios include:
 * Entering orbit around another planet or moon
 
 [Game link](http://asteriskman7.github.io/TuringSpaceProgram/)
+
 [Wiki link](https://github.com/asteriskman7/TuringSpaceProgram/wiki)
 
