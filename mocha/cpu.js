@@ -4,7 +4,7 @@ var Cpu = require('../cpu.js');
 var dut = new Cpu();
 
 var seed = Math.floor(Math.random() * 10000);
-//seed = 9342;
+//seed = 3187;
 
 function sinrnd() {
   var x = Math.sin(seed++) * 10000;
@@ -699,7 +699,6 @@ describe('Cpu', function() {
         //the bval msb must be set to 1
         expectedVal = (expectedVal | (0xFFFF0000 >> bVal)) & 0xFFFF;
       }
-      console.log(aVal + ' >> ' + bVal + ' = ' + expectedVal);
 
       var expA;
       var expB;
@@ -746,10 +745,13 @@ describe('Cpu', function() {
       if (regA === 0) {aVal = origVal;}
       if (regB === 0) {bVal = origVal;}
       var expectedVal;
+      var carryFlag;
       if (bVal > 15) {
         expectedVal = 0;
+        carryFlag = aVal !== 0;
       } else {
         expectedVal = (aVal << bVal) & 0xFFFF;
+        carryFlag = ((aVal << bVal) & 0xFFFF0000) !== 0;
       }
 
       var expA;
@@ -759,7 +761,6 @@ describe('Cpu', function() {
 
       var zeroFlag = (expectedVal === 0)|0;
       var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = ((aVal << bVal) & 0xFFFF0000) !== 0;
       var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
       before(function() {
         dut = new Cpu();
@@ -785,6 +786,304 @@ describe('Cpu', function() {
 
   }
 
+  for (i = 0; i < iterations; i++) {
 
+    describe('jmp ('+i+')', function() {
+      var startAddr = rnd16bit();
+      var jumpAddr = rnd16bit();
+
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dut.regMap.JD] = jumpAddr;
+        dut.ram[startAddr] = 0x3000;
+        dut.regs[dut.pci] = startAddr;
+        dut.tick();
+      });
+      it('should contain ' + jumpAddr + ' in PC', function() {
+        assert.equal(dut.regs[dut.pci], jumpAddr);
+      });
+      it('should contain ' + jumpAddr + ' in JD', function() {
+        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('jmp0 ('+i+')', function() {
+      var startAddr = rnd16bit();
+      var jumpAddr = rnd16bit();
+      var jumpMask = rnd16bit() & 0x00FF;
+      var realMask = rnd16bit() & 0x00FF;
+
+      //50% of the time, make sure we get a jump
+      if ((rnd16bit() & 0x1) === 0) {
+        jumpMask = (~realMask) & 0x00FF;
+      }
+
+      var shouldJump = (jumpMask & realMask) === 0;
+      var finalPC;
+      if (shouldJump) {
+        finalPC = jumpAddr;
+      } else {
+        finalPC = startAddr + 1;
+      }  
+
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dut.regMap.JD] = jumpAddr;
+        dut.ram[startAddr] = 0x3000 | jumpMask;
+        dut.regs[dut.regMap.AF] = realMask;
+        dut.regs[dut.pci] = startAddr;
+        dut.tick();
+      });
+      it('should contain ' + finalPC + ' in PC', function() {
+        assert.equal(dut.regs[dut.pci], finalPC);
+      });
+      it('should contain ' + jumpAddr + ' in JD', function() {
+        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
+      });
+    });
+
+  }  
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('jmp1 ('+i+')', function() {
+      var startAddr = rnd16bit();
+      var jumpAddr = rnd16bit();
+      var jumpMask = rnd16bit() & 0x00FF;
+      var realMask = rnd16bit() & 0x00FF;
+
+      //50% of the time, make sure we get a jump
+      if ((rnd16bit() & 0x1) === 0) {
+        jumpMask = (~realMask) & 0x00FF;
+      }
+
+      var shouldJump = (jumpMask & realMask) !== 0;
+      var finalPC;
+      if (shouldJump) {
+        finalPC = jumpAddr;
+      } else {
+        finalPC = startAddr + 1;
+      }  
+
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dut.regMap.JD] = jumpAddr;
+        dut.ram[startAddr] = 0x3100 | jumpMask;
+        dut.regs[dut.regMap.AF] = realMask;
+        dut.regs[dut.pci] = startAddr;
+        dut.tick();
+      });
+      it('should contain ' + finalPC + ' in PC', function() {
+        assert.equal(dut.regs[dut.pci], finalPC);
+      });
+      it('should contain ' + jumpAddr + ' in JD', function() {
+        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('call0 ('+i+')', function() {
+      var startAddr = rnd16bit();
+      var jumpAddr = rnd16bit();
+      var jumpMask = rnd16bit() & 0x00FF;
+      var realMask = rnd16bit() & 0x00FF;
+      var stackStart = rnd16bit();
+      var stackEnd;
+      var origStackValue = rnd16bit();
+      var ramEnd;
+
+      //50% of the time, make sure we get a jump
+      if ((rnd16bit() & 0x1) === 0) {
+        jumpMask = (~realMask) & 0x00FF;
+      }
+
+      var shouldJump = (jumpMask & realMask) === 0;
+      var finalPC;
+      if (shouldJump) {
+        finalPC = jumpAddr;
+        stackEnd = stackStart - 1;
+        ramEnd = (startAddr+1) & 0xFFFF;
+      } else {
+        finalPC = startAddr + 1;
+        stackEnd = stackStart;
+        ramEnd = origStackValue;
+      }  
+
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dut.regMap.JD] = jumpAddr;
+        dut.ram[startAddr] = 0x3400 | jumpMask;
+        dut.regs[dut.regMap.AF] = realMask;
+        dut.regs[dut.pci] = startAddr;
+
+        dut.regs[dut.regMap.SP] = stackStart;
+        dut.ram[stackEnd] = origStackValue;
+
+        dut.tick();
+      });
+      it('should contain ' + finalPC + ' in PC', function() {
+        assert.equal(dut.regs[dut.pci], finalPC);
+      });
+      it('should contain ' + jumpAddr + ' in JD', function() {
+        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
+      });
+      it('should contain ' + stackEnd + ' in SP', function() {
+        assert.equal(dut.regs[dut.regMap.SP], stackEnd);
+      });
+      it('should contain ' + ramEnd + ' in RAM ' + stackEnd, function() {
+        assert.equal(dut.ram[stackEnd], ramEnd);
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('call1 ('+i+')', function() {
+      var startAddr = rnd16bit();
+      var jumpAddr = rnd16bit();
+      var jumpMask = rnd16bit() & 0x00FF;
+      var realMask = rnd16bit() & 0x00FF;
+      var stackStart = rnd16bit();
+      var stackEnd;
+      var origStackValue = rnd16bit();
+      var ramEnd;
+
+      //50% of the time, make sure we get a jump
+      if ((rnd16bit() & 0x1) === 0) {
+        jumpMask = (~realMask) & 0x00FF;
+      }
+
+      var shouldJump = (jumpMask & realMask) !== 0;
+      var finalPC;
+      if (shouldJump) {
+        finalPC = jumpAddr;
+        stackEnd = stackStart - 1;
+        ramEnd = (startAddr+1) & 0xFFFF;
+      } else {
+        finalPC = startAddr + 1;
+        stackEnd = stackStart;
+        ramEnd = origStackValue;
+      }  
+
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dut.regMap.JD] = jumpAddr;
+        dut.ram[startAddr] = 0x3500 | jumpMask;
+        dut.regs[dut.regMap.AF] = realMask;
+        dut.regs[dut.pci] = startAddr;
+
+        dut.regs[dut.regMap.SP] = stackStart;
+        dut.ram[stackEnd] = origStackValue;
+
+        dut.tick();
+      });
+      it('should contain ' + finalPC + ' in PC', function() {
+        assert.equal(dut.regs[dut.pci], finalPC);
+      });
+      it('should contain ' + jumpAddr + ' in JD', function() {
+        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
+      });
+      it('should contain ' + stackEnd + ' in SP', function() {
+        assert.equal(dut.regs[dut.regMap.SP], stackEnd);
+      });
+      it('should contain ' + ramEnd + ' in RAM ' + stackEnd, function() {
+        assert.equal(dut.ram[stackEnd], ramEnd);
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('ret0 ('+i+')', function() {
+      var startAddr = rnd16bit();
+      var jumpAddr = rnd16bit();
+      var jumpMask = rnd16bit() & 0x00FF;
+      var realMask = rnd16bit() & 0x00FF;
+      var stackStart = rnd16bit();
+      var stackEnd;
+      var origStackValue = rnd16bit();
+      var ramEnd;
+      var JDend = rnd16bit();
+
+      //50% of the time, make sure we get a jump
+      if ((rnd16bit() & 0x1) === 0) {
+        jumpMask = (~realMask) & 0x00FF;
+      }
+
+      var shouldJump = (jumpMask & realMask) === 0;
+      var finalPC;
+      if (shouldJump) {
+        finalPC = jumpAddr;
+        stackEnd = stackStart + 1;
+        ramEnd = origStackValue;
+      } else {
+        finalPC = startAddr + 1;
+        stackEnd = stackStart;
+        ramEnd = jumpAddr;
+      }  
+
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dut.regMap.JD] = JDend;
+        dut.ram[startAddr] = 0x3600 | jumpMask;
+        dut.regs[dut.regMap.AF] = realMask;
+        dut.regs[dut.pci] = startAddr;
+
+        dut.regs[dut.regMap.SP] = stackStart;
+        dut.ram[stackEnd] = origStackValue;
+        dut.ram[stackStart] = jumpAddr;
+
+        dut.tick();
+      });
+      it('should contain ' + finalPC + ' in PC', function() {
+        assert.equal(dut.regs[dut.pci], finalPC);
+      });
+      it('should contain ' + JDend + ' in JD', function() {
+        assert.equal(dut.regs[dut.regMap.JD], JDend);
+      });
+      it('should contain ' + stackEnd + ' in SP', function() {
+        assert.equal(dut.regs[dut.regMap.SP], stackEnd);
+      });
+      it('should contain ' + ramEnd + ' in RAM ' + stackEnd, function() {
+        assert.equal(dut.ram[stackEnd], ramEnd);
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('int ('+i+')', function() {
+      var startAddr = rnd16bit();
+      var intNum = rnd16bit() & 0xF;
+      var jumpAddr = intNum;
+      var JDend = rnd16bit();
+
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dut.regMap.JD] = JDend;
+        dut.ram[startAddr] = 0x3800 | (intNum << 4);
+        dut.regs[dut.pci] = startAddr;
+        dut.tick();
+      });
+      it('should contain ' + jumpAddr + ' in PC', function() {
+        assert.equal(dut.regs[dut.pci], jumpAddr);
+      });
+      it('should contain ' + JDend + ' in JD', function() {
+        assert.equal(dut.regs[dut.regMap.JD], JDend);
+      });
+    });
+
+  }
+  
 });
 

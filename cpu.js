@@ -71,6 +71,8 @@ Cpu.prototype.tick = function() {
   var negFlag;
   var carryFlag;
   var bVal;
+  var jumpMask;
+
 
   switch (opClass) {
     case 0x0000: //load/store
@@ -220,6 +222,7 @@ Cpu.prototype.tick = function() {
           this.regs[this.regMap.AF] = zeroFlag | (negFlag << 1) | (carryFlag << 2);
           break;
         case 0x0A00: //sftl
+          bVal = this.regs[opArgB];
           if (bVal > 15) {
             rawResult = 0;
             carryFlag = (this.regs[opArgA] !== 0);
@@ -239,6 +242,54 @@ Cpu.prototype.tick = function() {
       }
       break;
     case 0x3000: //JUMP
+      switch (opCmd) {
+        case 0x0000: //jmp & jmp0
+          jumpMask = ((opArgA << 4) | opArgB) & this.regs[this.regMap.AF];
+          if (jumpMask === 0) {
+            this.regs[this.pci] = this.regs[this.regMap.JD];
+            pcJump = true;
+          }
+          break;
+        case 0x0100: //jmp1
+          jumpMask = ((opArgA << 4) | opArgB) & this.regs[this.regMap.AF];
+          if (jumpMask !== 0) {
+            this.regs[this.pci] = this.regs[this.regMap.JD];
+            pcJump = true;
+          }
+          break;
+        case 0x0400: //call0
+          jumpMask = ((opArgA << 4) | opArgB) & this.regs[this.regMap.AF];
+          if (jumpMask === 0) {
+            this.regs[this.regMap.SP] = (this.regs[this.regMap.SP] - 1) & 0xFFFF;
+            this.ram[this.regs[this.regMap.SP]] = (this.regs[this.pci] + 1) & 0xFFFF;
+            this.regs[this.pci] = this.regs[this.regMap.JD];
+            pcJump = true;
+          }
+          break;
+        case 0x0500: //call1
+          jumpMask = ((opArgA << 4) | opArgB) & this.regs[this.regMap.AF];
+          if (jumpMask !== 0) {
+            this.regs[this.regMap.SP] = (this.regs[this.regMap.SP] - 1) & 0xFFFF;
+            this.ram[this.regs[this.regMap.SP]] = (this.regs[this.pci] + 1) & 0xFFFF;
+            this.regs[this.pci] = this.regs[this.regMap.JD];
+            pcJump = true;
+          }
+          break;
+        case 0x0600: //ret0
+          jumpMask = ((opArgA << 4) | opArgB) & this.regs[this.regMap.AF];
+          if (jumpMask === 0) {
+            this.regs[this.pci] = this.readRam(this.regs[this.regMap.SP]);
+            this.regs[this.regMap.SP] = (this.regs[this.regMap.SP] + 1) & 0xFFFF;
+            pcJump = true;
+          }
+          break;
+        case 0x0800: //int
+          this.regs[this.pci] = opArgA;
+          pcJump = true;
+          break;
+        default:
+          this.opcodeError(opcode);
+      }
       break;
     default:
       this.opcodeError(opcode);
