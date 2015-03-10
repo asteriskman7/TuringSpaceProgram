@@ -72,6 +72,7 @@ Cpu.prototype.tick = function() {
   var carryFlag;
   var bVal;
   var jumpMask;
+  var jumpDist;
 
 
   switch (opClass) {
@@ -257,6 +258,16 @@ Cpu.prototype.tick = function() {
             pcJump = true;
           }
           break;
+        case 0x0200: //jmpf
+          jumpDist = (opArgA << 4) | opArgB;
+          this.regs[this.pci] = (this.regs[this.pci] + jumpDist) & 0xFFFF;
+          pcJump = true;
+          break
+        case 0x0300: //jmpb
+          jumpDist = (opArgA << 4) | opArgB;
+          this.regs[this.pci] = (this.regs[this.pci] - jumpDist) & 0xFFFF;
+          pcJump = true;
+          break
         case 0x0400: //call0
           jumpMask = ((opArgA << 4) | opArgB) & this.regs[this.regMap.AF];
           if (jumpMask === 0) {
@@ -313,7 +324,7 @@ Cpu.prototype.rnd16bit = function() {
 };
 
 Cpu.prototype.opcodeError = function(opcode) {
-  this.runtimeError('Illegal opcode ' + opcode.toString(16) + ' at ' + this.regs[this.pci].toString(16));
+  this.runtimeError('Illegal opcode 0x' + opcode.toString(16) + ' at 0x' + this.regs[this.pci].toString(16));
 };
 
 

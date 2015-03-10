@@ -889,6 +889,56 @@ describe('Cpu', function() {
 
   for (i = 0; i < iterations; i++) {
 
+    describe('jmpf ('+i+')', function() {
+      var startAddr = rnd16bit();
+      var jumpLength = rnd16bit() & 0x00FF;
+      var finalAddr = (startAddr + jumpLength) & 0xFFFF;
+      var JDVal = rnd16bit();
+
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dut.regMap.JD] = JDVal;
+        dut.ram[startAddr] = 0x3200 | jumpLength;
+        dut.regs[dut.pci] = startAddr;
+        dut.tick();
+      });
+      it('should contain ' + finalAddr + ' in PC', function() {
+        assert.equal(dut.regs[dut.pci], finalAddr);
+      });
+      it('should contain ' + JDVal + ' in JD', function() {
+        assert.equal(dut.regs[dut.regMap.JD], JDVal);
+      });
+    });
+
+  }  
+
+  for (i = 0; i < iterations; i++) {
+
+    describe('jmpb ('+i+')', function() {
+      var startAddr = rnd16bit();
+      var jumpLength = rnd16bit() & 0x00FF;
+      var finalAddr = (startAddr - jumpLength) & 0xFFFF;
+      var JDVal = rnd16bit();
+
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dut.regMap.JD] = JDVal;
+        dut.ram[startAddr] = 0x3300 | jumpLength;
+        dut.regs[dut.pci] = startAddr;
+        dut.tick();
+      });
+      it('should contain ' + finalAddr + ' in PC', function() {
+        assert.equal(dut.regs[dut.pci], finalAddr);
+      });
+      it('should contain ' + JDVal + ' in JD', function() {
+        assert.equal(dut.regs[dut.regMap.JD], JDVal);
+      });
+    });
+
+  }
+
+  for (i = 0; i < iterations; i++) {
+
     describe('call0 ('+i+')', function() {
       var startAddr = rnd16bit();
       var jumpAddr = rnd16bit();
