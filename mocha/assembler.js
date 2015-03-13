@@ -515,6 +515,105 @@ describe('Assembler', function() {
         return {code: code, result: [binary]};
       }
     },
+    {
+      name: 'jmp',
+      test: function() {
+        var op = 'jmp';
+        var code = rndCodeFormat([op]);
+        var binary = 0x3000; 
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'jmp0',
+      test: function() {
+        var op = 'jmp0';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x3000 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'jmp1',
+      test: function() {
+        var op = 'jmp1';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x3100 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'jmpf',
+      test: function() {
+        var op = 'jmpf';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x3200 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'jmpb',
+      test: function() {
+        var op = 'jmpb';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x3300 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'call0',
+      test: function() {
+        var op = 'call0';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x3400 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'call1',
+      test: function() {
+        var op = 'call1';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x3500 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'ret0',
+      test: function() {
+        var op = 'ret0';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x3600 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'ret1',
+      test: function() {
+        var op = 'ret1';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x3700 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'int',
+      test: function() {
+        var op = 'int';
+        var constant = rndConst(0x000F);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x3800 | (constant.val << 4);
+        return {code: code, result: [binary]};
+      }
+    },
   ];
 
   var testcase;

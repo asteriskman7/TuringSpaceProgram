@@ -295,6 +295,83 @@ Assembler.prototype.assemble = function(code) {
             this.debug[addr] = rawLine;
           }
           break;
+        case 'jmp': 
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3000;
+          this.debug[addr] = rawLine;
+          break;
+        case 'jmp0':
+          if (isNaN(constant)) {
+            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+          }
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3000 | (constant & 0xFF);
+          this.debug[addr] = rawLine;
+          break;
+        case 'jmp1':
+          if (isNaN(constant)) {
+            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+          }
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3100 | (constant & 0xFF);
+          this.debug[addr] = rawLine;
+          break;
+        case 'jmpf':
+          if (isNaN(constant)) {
+            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+          }
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3200 | (constant & 0xFF);
+          this.debug[addr] = rawLine;
+          break;
+        case 'jmpb':
+          if (isNaN(constant)) {
+            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+          }
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3300 | (constant & 0xFF);
+          this.debug[addr] = rawLine;
+          break;
+        case 'call0':
+          if (isNaN(constant)) {
+            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+          }
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3400 | (constant & 0xFF);
+          this.debug[addr] = rawLine;
+          break;
+        case 'call1':
+          if (isNaN(constant)) {
+            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+          }
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3500 | (constant & 0xFF);
+          this.debug[addr] = rawLine;
+          break;
+        case 'ret0':
+          if (isNaN(constant)) {
+            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+          }
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3600 | (constant & 0xFF);
+          this.debug[addr] = rawLine;
+          break;
+        case 'ret1':
+          if (isNaN(constant)) {
+            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+          }
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3700 | (constant & 0xFF);
+          this.debug[addr] = rawLine;
+          break;
+        case 'int':
+          if (isNaN(constant)) {
+            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+          }
+          addr = (addr + 1) & 0xFFFF;
+          this.ram[addr] = 0x3800 | ((constant & 0xF) << 4);
+          this.debug[addr] = rawLine;
+          break;
         default:
           return 'ERROR: Unknown command "' + cmd + '" on line ' + lineNum;
       }
@@ -332,6 +409,9 @@ Assembler.prototype.stringToInt = function(string) {
 
   //console.log('sti: ' + string);
   //console.log('in STI labelMap: ' + JSON.stringify(this.labelMap));
+  if (string === undefined) {
+    return NaN;
+  }
 
   if (string.search(/\.l$/) !== -1) {
     mask = 0x00FF;
