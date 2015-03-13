@@ -373,6 +373,28 @@ describe('Assembler', function() {
         return {code: code, result: [binary]};
       }
     },
+    {
+      name: 'ior',
+      test: function() {
+        var op = 'ior';
+        var rega = rndReg();
+        var constant = rndConst(0x000F);
+        var code = rndCodeFormat([op, rega.name, constant.str]);
+        var binary = 0x1000 | (rega.index << 4) | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'iow',
+      test: function() {
+        var op = 'iow';
+        var rega = rndReg();
+        var constant = rndConst(0x000F);
+        var code = rndCodeFormat([op, constant.str, rega.name]);
+        var binary = 0x1100 | (constant.val << 4) | rega.index;
+        return {code: code, result: [binary]};
+      }
+    },
   ];
 
   var testcase;
