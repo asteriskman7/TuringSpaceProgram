@@ -186,6 +186,115 @@ Assembler.prototype.assemble = function(code) {
             }
           }
           break;
+        case 'add':
+          if ((rega === undefined) || (regb === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
+          } else {
+            addr = (addr + 1) & 0xFFFF;
+            this.ram[addr] = 0x2000 | (rega << 4) | regb; 
+            this.debug[addr] = rawLine;
+          }
+          break;
+        case 'addc':
+          if ((rega === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '')
+          } else {
+            constant = this.stringToInt(splitLine[2]);
+            if (isNaN(constant)) {
+              return 'ERROR: Illegal constant "' + splitLine[2] + '" on line ' + lineNum;
+            } else {
+              addr = (addr + 1) & 0xFFFF;
+              this.ram[addr] = 0x2100 | (rega << 4) | (constant & 0x0F); 
+              this.debug[addr] = rawLine;
+            }
+          }
+          break;
+        case 'sub':
+          if ((rega === undefined) || (regb === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
+          } else {
+            addr = (addr + 1) & 0xFFFF;
+            this.ram[addr] = 0x2200 | (rega << 4) | regb; 
+            this.debug[addr] = rawLine;
+          }
+          break;
+        case 'subc':
+          if ((rega === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '')
+          } else {
+            constant = this.stringToInt(splitLine[2]);
+            if (isNaN(constant)) {
+              return 'ERROR: Illegal constant "' + splitLine[2] + '" on line ' + lineNum;
+            } else {
+              addr = (addr + 1) & 0xFFFF;
+              this.ram[addr] = 0x2300 | (rega << 4) | (constant & 0x0F); 
+              this.debug[addr] = rawLine;
+            }
+          }
+          break;
+        case 'and':
+          if ((rega === undefined) || (regb === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
+          } else {
+            addr = (addr + 1) & 0xFFFF;
+            this.ram[addr] = 0x2400 | (rega << 4) | regb; 
+            this.debug[addr] = rawLine;
+          }
+          break;
+        case 'or':
+          if ((rega === undefined) || (regb === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
+          } else {
+            addr = (addr + 1) & 0xFFFF;
+            this.ram[addr] = 0x2500 | (rega << 4) | regb; 
+            this.debug[addr] = rawLine;
+          }
+          break;
+        case 'xor':
+          if ((rega === undefined) || (regb === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
+          } else {
+            addr = (addr + 1) & 0xFFFF;
+            this.ram[addr] = 0x2600 | (rega << 4) | regb; 
+            this.debug[addr] = rawLine;
+          }
+          break;
+        case 'not':
+          if ((rega === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '');
+          } else {
+            addr = (addr + 1) & 0xFFFF;
+            this.ram[addr] = 0x2700 | (rega << 4); 
+            this.debug[addr] = rawLine;
+          }
+          break;
+        case 'sftr':
+          if ((rega === undefined) || (regb === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
+          } else {
+            addr = (addr + 1) & 0xFFFF;
+            this.ram[addr] = 0x2800 | (rega << 4) | regb; 
+            this.debug[addr] = rawLine;
+          }
+          break;
+        case 'sftrs':
+          if ((rega === undefined) || (regb === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
+          } else {
+            addr = (addr + 1) & 0xFFFF;
+            this.ram[addr] = 0x2900 | (rega << 4) | regb; 
+            this.debug[addr] = rawLine;
+          }
+          break;
+        case 'sftl':
+          if ((rega === undefined) || (regb === undefined)) {
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
+          } else {
+            addr = (addr + 1) & 0xFFFF;
+            this.ram[addr] = 0x2A00 | (rega << 4) | regb; 
+            this.debug[addr] = rawLine;
+          }
+          break;
         default:
           return 'ERROR: Unknown command "' + cmd + '" on line ' + lineNum;
       }

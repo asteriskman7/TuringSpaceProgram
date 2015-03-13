@@ -395,6 +395,126 @@ describe('Assembler', function() {
         return {code: code, result: [binary]};
       }
     },
+    {
+      name: 'add',
+      test: function() {
+        var op = 'add';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x2000 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'addc',
+      test: function() {
+        var op = 'addc';
+        var rega = rndReg();
+        var constant = rndConst(0x000F);
+        var code = rndCodeFormat([op, rega.name, constant.str]);
+        var binary = 0x2100 | (rega.index << 4) | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'sub',
+      test: function() {
+        var op = 'sub';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x2200 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'subc',
+      test: function() {
+        var op = 'subc';
+        var rega = rndReg();
+        var constant = rndConst(0x000F);
+        var code = rndCodeFormat([op, rega.name, constant.str]);
+        var binary = 0x2300 | (rega.index << 4) | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'and',
+      test: function() {
+        var op = 'and';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x2400 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'or',
+      test: function() {
+        var op = 'or';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x2500 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'xor',
+      test: function() {
+        var op = 'xor';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x2600 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'not',
+      test: function() {
+        var op = 'not';
+        var rega = rndReg();
+        var code = rndCodeFormat([op, rega.name]);
+        var binary = 0x2700 | (rega.index << 4);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'sftr',
+      test: function() {
+        var op = 'sftr';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x2800 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'sftrs',
+      test: function() {
+        var op = 'sftrs';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x2900 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'sftl',
+      test: function() {
+        var op = 'sftl';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x2A00 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
   ];
 
   var testcase;
