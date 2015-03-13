@@ -3,8 +3,11 @@ var Assembler = require('../assembler.js');
 
 var dut = new Assembler();
 
-var seed = Math.floor(Math.random() * 10000);
-//seed = 6167;
+var seed = Math.floor(Math.random() * 10000);  //this should be the only use of Math.random() in this file
+Math.random = function() {throw "NEVER USE Math.random() IN TESTS"};
+//seed = 9038;
+
+var iterations = 1;
 
 function sinrnd() {
   var x = Math.sin(seed++) * 10000;
@@ -20,11 +23,149 @@ function rnd1bit() {
   return Math.floor(sinrnd() * 2);
 }
 
+function rndSpace() {
+  var result = '';
+  var count = rndRange(1,4);
+  var i;
+  for (i = 0; i < count; i++) {
+    result += rnd1bit() ? ' ' : '\t';
+  }
+  return result;
+}
+
 function rndStr(l) {
   var result = '';
   do {
-    result = (result + ((Math.random() + 1).toString(36).substr(2))).substr(0,l);
+    result = (result + ((sinrnd() + 1).toString(36).substr(2))).substr(0,l);
   } while (result.length < l);
+
+  return result;
+}
+
+function rndTxt(l) {
+  var result = '';
+  do {
+    result = (result + ((sinrnd() + 1).toString(36).substr(2))).substr(0,l);
+  } while (result.length < l);
+
+  var spaces = rndRange(1, Math.floor(l / 6));
+  var si;
+  while (spaces > 0) {
+    si = rndRange(0,l-1);
+    result = result.substr(0,si) + ' ' + result.substr(si+1);
+    spaces--;
+  }
+
+  return result;
+}
+
+function rndRange(min, max) {
+  return Math.floor(sinrnd() * (max - min + 1) + min);
+}
+
+function rndReg() {
+  var regList = Object.keys(dut.regMap);
+  var regIndex = rndRange(0, regList.length - 1);
+  var regName = regList[regIndex];
+  return {index: regIndex, name: regName};
+}
+
+function rndConst(forceMask) {
+  var C = rnd16bit();
+  var CVal;
+  var mask; 
+  var CStr;
+
+  if (rnd1bit()) {
+    //use a mask
+    if (rnd1bit()) {
+      //use 8 bit mask
+      if (rnd1bit()) {
+        mask = '.h';
+        CVal = (C & 0xFF00) >> 8;
+      } else {
+        mask = '.l';
+        CVal = C & 0xFF;
+      }
+    } else {
+      //use 4 bit mask
+      switch (rndRange(0,3)) {
+        case 0: 
+          mask = '.ll';
+          CVal = (C & 0x000F);
+          break;
+        case 1:
+          mask = '.lh';
+          CVal = (C & 0x00F0) >> 4;
+          break;
+        case 2:
+          mask = '.hl';
+          CVal = (C & 0x0F00) >> 8;
+          break;
+        case 3:
+          mask = '.hh';
+          CVal = (C & 0xF000) >> 12;
+          break;
+      }
+    }
+  } else {
+    CVal = C;
+    mask = '';
+  }
+  //apply the forceMask to make sure CVal is not larger than the op can hold
+  //console.log('pre forceMask CVal = ' + CVal);
+  CVal = CVal & forceMask;
+
+  switch (rndRange(0,3)) {
+    case 0: //dec
+      CStr = C.toString(10) + mask;
+      //console.log('dec');
+      break;
+    case 1: //hex
+      CStr = '0x' + C.toString(16) + mask;
+      //console.log('hex');
+      break;
+    case 2: //ascii
+      //CStr = '"'; //"this comment to fix syntax highlighting 
+      if (rnd1bit() || ((C & 0xFF) < 0x20)) {
+        CStr = '\\x' + ('00' + (C & 0xFF).toString(16)).substr(-2);
+      } else {
+        CStr = String.fromCharCode(C);
+      }
+      if (C > 0xFF) {
+        if (rnd1bit() || ((C & 0xFF00) < 0x2000)) {
+          CStr = '\\x' + ('00' + ((C & 0xFF00) >> 8).toString(16)).substr(-2) + CStr;
+        } else {
+          CStr = String.fromCharCode((C & 0xFF00) >> 8) + CStr;
+        }
+      }
+      CStr = '"' + CStr + '"' + mask; 
+      //console.log('ascii and C=' + C + ' and cval=' + CVal);
+      break;
+    case 3: //label
+      CStr = ':' + rndStr(rndRange(1, 32));
+      dut.labelMap = {};
+      dut.labelMap[CStr] = C;
+      //console.log('label ' + CStr + ' = ' + C + ' mask=' + mask);
+      CStr += mask;
+      //console.log('label');
+      break;
+  }
+
+  //console.log('rndConst returning ' + CStr + ' with a value of ' + CVal);
+
+  return {str: CStr, val: CVal};
+}       
+
+function rndCodeFormat(a) {
+  var comment = rnd1bit() ? ';' + rndTxt(rndRange(0,64)) : '';
+  var label = rnd1bit() ? rndSpace() + ':' + rndStr(rndRange(1, 32)) : '';
+  var result = label + rndSpace();
+  var i;
+  for (i = 0; i < a.length; i++) {
+    result += a[i] + rndSpace();
+  }
+  result += comment;
   return result;
 }
 
@@ -47,7 +188,6 @@ function bin2hex(b) {
   return result;
 }
 
-var iterations = 1;
 var i;
 
 
@@ -67,6 +207,9 @@ describe('Assembler', function() {
   });
 
   describe('object', function() {
+    before(function() {
+      dut = new Assembler();
+    });
     it('should have an empty ram array', function() {
       assert.equal(toString.call(dut.ram), '[object Array]');
       assert.equal(dut.ram.length, 0);
@@ -107,14 +250,29 @@ describe('Assembler', function() {
       assert.equal(dut.stringToInt('0x' + value.toString(16) + mask), result);
     });
     it('should convert ascii correctly', function() {
-      var s = String.fromCharCode(value & 0xFF);
-      if (value > 0xFF) {
-        s = String.fromCharCode((value >> 8) & 0xFF) + s;
+      //don't let one of the characters be a new line
+      var illegalAscii = [];
+      illegalAscii[0x0A] = true;
+      illegalAscii['"'.charCodeAt(0)] = true; //"fix highlighting
+      var s = '';
+      if (rnd1bit() | (illegalAscii[value & 0xFF] === true)) {
+        s = String.fromCharCode(value & 0xFF);
+      } else {
+        s = '\\x' + ('00' + value.toString(16)).substr(-2);
       }
+      if (value > 0xFF) {
+        if (rnd1bit() | (illegalAscii[(value & 0xFF00) >> 8] === true)) {
+          s = '\\x' + ('00' + ((value >> 8) & 0xFF).toString(16)).substr(-2) + s;
+        } else {
+          s = String.fromCharCode((value >> 8) & 0xFF) + s;
+        }
+      }
+      //console.log('value is ' + value);
+      //console.log('ascii is ' + s);
       assert.equal(dut.stringToInt('"' + s + '"' + mask), result);
     });
     it('should convert label correctly', function() {
-      var label = ':' + rndStr(rnd16bit() & 0xF + 1);
+      var label = ':' + rndStr(rndRange(1, 32));
       dut.labelMap = {};
       dut.labelMap[label] = value;
       assert.equal(dut.stringToInt(label + mask), result);
@@ -124,8 +282,97 @@ describe('Assembler', function() {
   var tests = [
     {
       name: 'ld',
-      test: function() {return {code: 'ld R1 R2; comment', result: [0x0012]};},
-    }
+      test: function() {
+        var op = 'ld';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x0000 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'ldl',
+      test: function() {
+        var op = 'ldl';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x0200 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'ldh',
+      test: function() {
+        var op = 'ldh';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x0300 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'ldr',
+      test: function() {
+        var op = 'ldr';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x0400 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'str',
+      test: function() {
+        var op = 'str';
+        var rega = rndReg();
+        var regb = rndReg();
+        var code = rndCodeFormat([op, rega.name, regb.name]);
+        var binary = 0x0500 | (rega.index << 4) | (regb.index);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'ldrc',
+      test: function() {
+        var op = 'ldrc';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x0600 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'strc',
+      test: function() {
+        var op = 'strc';
+        var constant = rndConst(0x00FF);
+        var code = rndCodeFormat([op, constant.str]);
+        var binary = 0x0700 | constant.val;
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'pop',
+      test: function() {
+        var op = 'pop';
+        var rega = rndReg();
+        var code = rndCodeFormat([op, rega.name]);
+        var binary = 0x0C00 | (rega.index << 4);
+        return {code: code, result: [binary]};
+      }
+    },
+    {
+      name: 'push',
+      test: function() {
+        var op = 'push';
+        var rega = rndReg();
+        var code = rndCodeFormat([op, rega.name]);
+        var binary = 0x0D00 | (rega.index << 4);
+        return {code: code, result: [binary]};
+      }
+    },
   ];
 
   var testcase;
@@ -135,22 +382,34 @@ describe('Assembler', function() {
     for (var i = 0; i < iterations; i++) {
 
       describe(testcase.name + ' (' + i + ')', function() {
-        var testInfo = testcase.test();
-        var testCode = testInfo.code;
-        var testResult = testInfo.result;
-        var testHex = arrayToHex(testResult);
+        var testInfo; 
+        var testCode; 
+        var testResult;
+        var testHex;
         var rc;
-        before(function() {
+        //propagate this information into this function
+        var testcaseNum = testNum;
+        var testcase = tests[testcaseNum];
+        before (function() {
           dut = new Assembler();
+          testInfo = testcase.test();
+          testCode = testInfo.code;
+          testResult = testInfo.result;
+          testHex = arrayToHex(testResult);
           rc = dut.assemble(testCode);
         });
-        it('should have ram equal to ' + testResult.toString(), function() {
+        it('should have correct ram', function() {
           assert.deepEqual(dut.ram, testResult); 
         });
-        it('should have hex equal to ' + testHex, function() {
+        it('should have correct hex', function() {
           assert.equal(dut.hex, testHex);
         });
-        it('should have return code ""', function() {
+
+        //todo: make this work more automatically. i.e. don't require manual generation of debug array
+        //it('should have debug equal to "' + testCode + '"', function() {
+        //});
+        
+        it('should have empty return code', function() {
           assert.equal(rc, '');
         });
       });
@@ -159,1120 +418,3 @@ describe('Assembler', function() {
   }
 
 });
-/*
-
-describe('Cpu', function() {
-  describe('class', function() {
-    it('should be a function', function() {
-      assert.equal(typeof Cpu, 'function');
-    });
-    it('should have a tick method', function() {
-      assert.equal(typeof Cpu.prototype.tick, 'function');
-    });
-    it('should have a readRam method', function() {
-      assert.equal(typeof Cpu.prototype.readRam, 'function');
-    });
-  });
-
-  describe('object', function() {
-    it('should have 16 regs', function() {
-      assert.equal(dut.regs.length, 16);
-    });
-    it('should start with pc=0', function() {
-      assert.equal(dut.regs[8], 0);
-    });
-    it('should have an empty ram array', function() {
-      assert.equal(toString.call(dut.ram), '[object Array]');
-      assert.equal(dut.ram.length, 0);
-    });
-    it('should have a runtimeError callback', function() {
-      assert.equal(typeof dut.runtimeError, 'function');
-    });
-  });
-
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('ld ('+i+')', function() {
-      var expectedVal = rnd16bit();
-      var srcReg = rnd16bit() & 0x7;
-      var dstReg = rnd16bit() & 0x7;
-      before(function() {
-        dut = new Cpu();
-        dut.ram[0] = 0x0000 | srcReg | (dstReg << 4);
-        dut.regs[srcReg] = expectedVal;
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + dstReg, function() {
-        assert.equal(dut.regs[dstReg], expectedVal);
-      });
-      it('should contain ' + expectedVal + ' in Reg' + srcReg, function() {
-        assert.equal(dut.regs[srcReg], expectedVal);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('ldl ('+i+')', function() {
-      var origVal = rnd16bit();
-      var constVal = rnd16bit() & 0xFF;
-      var expectedVal = (origVal & 0xFF00) | constVal;
-      var dstReg = 0;
-      //console.log('Reg ' + dstReg + ' start ' + origVal + ' const ' + constVal + ' expectedVal ' + expectedVal);
-      before(function() {
-        dut = new Cpu();
-        dut.ram[0] = 0x0200 | constVal;
-        dut.regs[dstReg] = origVal;
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + dstReg, function() {
-        assert.equal(dut.regs[dstReg], expectedVal);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('ldh ('+i+')', function() {
-      var origVal = rnd16bit();
-      var constVal = rnd16bit() & 0xFF00;
-      var expectedVal = (origVal & 0x00FF) | constVal;
-      var dstReg = 0;
-      //console.log('Reg ' + dstReg + ' start ' + origVal + ' const ' + constVal + ' expectedVal ' + expectedVal);
-      before(function() {
-        dut = new Cpu();
-        dut.ram[0] = 0x0300 | (constVal >> 8);
-        dut.regs[dstReg] = origVal;
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + dstReg, function() {
-        assert.equal(dut.regs[dstReg], expectedVal);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('ldr ('+i+')', function() {
-      var origVal = rnd16bit();
-      var ramAddr = (rnd16bit() + 1) & 0xFFFF; //make sure to not write addr 0 where this opcode will be
-      var expectedVal = rnd16bit();
-      var dstReg = rnd16bit() & 0x0007;
-      var addrReg; 
-      do {
-        addrReg = rnd16bit() & 0x0007;
-      } while (addrReg == dstReg);
-
-      before(function() {
-        dut = new Cpu();
-        dut.ram[0] = 0x0400 | (dstReg << 4) | (addrReg);
-        dut.ram[ramAddr] = expectedVal;
-        dut.regs[dstReg] = origVal;
-        dut.regs[addrReg] = ramAddr;
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + dstReg, function() {
-        assert.equal(dut.regs[dstReg], expectedVal);
-      });
-      it('should contain ' + expectedVal + ' in Ram[' + ramAddr + ']', function() {
-        assert.equal(dut.ram[ramAddr], expectedVal);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('str ('+i+')', function() {
-      var origVal = rnd16bit();
-      var ramAddr = (rnd16bit() + 1) & 0xFFFF; //make sure to not write addr 0 where this opcode will be
-      var expectedVal = rnd16bit();
-      var srcReg = rnd16bit() & 0x0007;
-      var addrReg; 
-      do {
-        addrReg = rnd16bit() & 0x0007;
-      } while (addrReg == srcReg);
-
-      before(function() {
-        dut = new Cpu();
-        dut.ram[0] = 0x0500 | (addrReg << 4) | (srcReg);
-        dut.ram[ramAddr] = origVal;
-        dut.regs[srcReg] = expectedVal;
-        dut.regs[addrReg] = ramAddr;
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + srcReg, function() {
-        assert.equal(dut.regs[srcReg], expectedVal);
-      });
-      it('should contain ' + expectedVal + ' in Ram[' + ramAddr + ']', function() {
-        assert.equal(dut.ram[ramAddr], expectedVal);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('ldrc ('+i+')', function() {
-      var origVal = rnd16bit();
-      var expectedVal = rnd16bit();
-      var segAddr = (rnd16bit() + 1) & 0xFFFF; //make sure to not write addr 0 where this opcode will be
-      var constAddr = rnd16bit() & 0x00FF;
-      var ramAddr = (segAddr + constAddr) & 0xFFFF;
-
-
-      before(function() {
-        dut = new Cpu();
-        dut.ram[0] = 0x0600 | constAddr;
-        dut.ram[ramAddr] = expectedVal;
-        dut.regs[0] = origVal;
-        dut.regs[dut.regMap.SEG] = segAddr;
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expectedVal + ' in Ram[' + ramAddr + ']', function() {
-        assert.equal(dut.ram[ramAddr], expectedVal);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('strc ('+i+')', function() {
-      var origVal = rnd16bit();
-      var expectedVal = rnd16bit();
-      var segAddr = (rnd16bit() + 1) & 0xFFFF; //make sure to not write addr 0 where this opcode will be
-      var constAddr = rnd16bit() & 0x00FF;
-      var ramAddr = (segAddr + constAddr) & 0xFFFF;
-
-
-      before(function() {
-        dut = new Cpu();
-        dut.ram[0] = 0x0700 | constAddr;
-        dut.ram[ramAddr] = origVal;
-        dut.regs[0] = expectedVal;
-        dut.regs[dut.regMap.SEG] = segAddr;
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expectedVal + ' in Ram[' + ramAddr + ']', function() {
-        assert.equal(dut.ram[ramAddr], expectedVal);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('pop ('+i+')', function() {
-      var origVal = rnd16bit();
-      var expectedVal = rnd16bit();
-      var spStartAddr = (rnd16bit() + 1) & 0xFFFF; //make sure to not write data where this opcode will be
-      var spEndAddr = (spStartAddr + 1) & 0xFFFF;
-      var dstReg = rnd16bit() & 0x0007;
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dstReg] = origVal;
-        dut.ram[0] = 0x0C00 | (dstReg << 4);
-        dut.ram[spStartAddr] = expectedVal;
-        dut.regs[dut.regMap.SP] = spStartAddr;
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + dstReg, function() {
-        assert.equal(dut.regs[dstReg], expectedVal);
-      });
-      it('should contain ' + expectedVal + ' in Ram[' + spStartAddr + ']', function() {
-        assert.equal(dut.ram[spStartAddr], expectedVal);
-      });
-      it('should contain ' + spEndAddr + ' in SP', function() {
-        assert.equal(dut.regs[dut.regMap.SP], spEndAddr);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('push ('+i+')', function() {
-      var origVal = rnd16bit();
-      var expectedVal = rnd16bit();
-      var spStartAddr = (rnd16bit() + 1) & 0xFFFF; //make sure to not write data where this opcode will be
-      if (spStartAddr === 1) {spStartAddr = 2;}
-      var spEndAddr = (spStartAddr - 1 ) & 0xFFFF;
-      var srcReg = rnd16bit() & 0x0007;
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[srcReg] = expectedVal;
-        dut.ram[0] = 0x0D00 | (srcReg << 4);
-        dut.ram[spEndAddr] = origVal;
-        dut.regs[dut.regMap.SP] = spStartAddr;
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + srcReg, function() {
-        assert.equal(dut.regs[srcReg], expectedVal);
-      });
-      it('should contain ' + expectedVal + ' in Ram[' + spEndAddr + ']', function() {
-        assert.equal(dut.ram[spEndAddr], expectedVal);
-      });
-      it('should contain ' + spEndAddr + ' in SP', function() {
-        assert.equal(dut.regs[dut.regMap.SP], spEndAddr);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('add ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit();
-      var regA = rnd16bit() & 0x0007;
-      var regB = rnd16bit() & 0x0007;
-      if (regB === regA) {bVal = aVal;}
-      if (regA === 0) {aVal = origVal;}
-      if (regB === 0) {bVal = origVal;}
-      var expectedVal = (aVal + bVal) & 0xFFFF;
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = (((aVal + bVal) & 0x10000) === 0x10000)|0
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.regs[regB] = bVal;
-        dut.ram[0] = 0x2000 | (regA << 4) | (regB);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expB + ' in Reg' + regB, function() {
-        assert.equal(dut.regs[regB], expB);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('addc ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit() & 0x000F;
-      var regA = rnd16bit() & 0x0007;
-      if (regA === 0) {aVal = origVal;}
-      var expectedVal = (aVal + bVal) & 0xFFFF;
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = (((aVal + bVal) & 0x10000) === 0x10000)|0
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.ram[0] = 0x2100 | (regA << 4) | (bVal);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('sub ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit();
-      var regA = rnd16bit() & 0x0007;
-      var regB = rnd16bit() & 0x0007;
-      if (regB === regA) {bVal = aVal;}
-      if (regA === 0) {aVal = origVal;}
-      if (regB === 0) {bVal = origVal;}
-      var expectedVal = (aVal - bVal) & 0xFFFF;
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = (((aVal - bVal) & 0x10000) === 0x10000)|0
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.regs[regB] = bVal;
-        dut.ram[0] = 0x2200 | (regA << 4) | (regB);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expB + ' in Reg' + regB, function() {
-        assert.equal(dut.regs[regB], expB);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('subc ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit() & 0x000F;
-      var regA = rnd16bit() & 0x0007;
-      if (regA === 0) {aVal = origVal;}
-      var expectedVal = (aVal - bVal) & 0xFFFF;
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = (((aVal + bVal) & 0x10000) === 0x10000)|0
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.ram[0] = 0x2300 | (regA << 4) | (bVal);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('and ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit();
-      var regA = rnd16bit() & 0x0007;
-      var regB = rnd16bit() & 0x0007;
-      if (regB === regA) {bVal = aVal;}
-      if (regA === 0) {aVal = origVal;}
-      if (regB === 0) {bVal = origVal;}
-      var expectedVal = (aVal & bVal);
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = (((aVal & bVal) & 0x10000) === 0x10000)|0
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.regs[regB] = bVal;
-        dut.ram[0] = 0x2400 | (regA << 4) | (regB);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expB + ' in Reg' + regB, function() {
-        assert.equal(dut.regs[regB], expB);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('or ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit();
-      var regA = rnd16bit() & 0x0007;
-      var regB = rnd16bit() & 0x0007;
-      if (regB === regA) {bVal = aVal;}
-      if (regA === 0) {aVal = origVal;}
-      if (regB === 0) {bVal = origVal;}
-      var expectedVal = (aVal | bVal);
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = (((aVal | bVal) & 0x10000) === 0x10000)|0
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.regs[regB] = bVal;
-        dut.ram[0] = 0x2500 | (regA << 4) | (regB);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expB + ' in Reg' + regB, function() {
-        assert.equal(dut.regs[regB], expB);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('xor ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit();
-      var regA = rnd16bit() & 0x0007;
-      var regB = rnd16bit() & 0x0007;
-      if (regB === regA) {bVal = aVal;}
-      if (regA === 0) {aVal = origVal;}
-      if (regB === 0) {bVal = origVal;}
-      var expectedVal = (aVal ^ bVal);
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = (((aVal ^ bVal) & 0x10000) === 0x10000)|0
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.regs[regB] = bVal;
-        dut.ram[0] = 0x2600 | (regA << 4) | (regB);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expB + ' in Reg' + regB, function() {
-        assert.equal(dut.regs[regB], expB);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('not ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var regA = rnd16bit() & 0x0007;
-      if (regA === 0) {aVal = origVal;}
-      var expectedVal = (~aVal) & 0xFFFF;
-      var expA;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = 0;
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.ram[0] = 0x2700 | (regA << 4);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('sftr ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit() & 0x001F;
-      var regA = rnd16bit() & 0x0007;
-      var regB = rnd16bit() & 0x0007;
-      if (regB === regA) {aVal = bVal;}
-      if (regA === 0) {aVal = origVal;}
-      if (regB === 0) {bVal = origVal;}
-      var expectedVal;
-      if (bVal > 15) {
-        expectedVal = 0;
-      } else {
-        expectedVal = (aVal >>> bVal);
-      }
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = 0;
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.regs[regB] = bVal;
-        dut.ram[0] = 0x2800 | (regA << 4) | (regB);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expB + ' in Reg' + regB, function() {
-        assert.equal(dut.regs[regB], expB);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('sftrs ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit() & 0x001F;
-      var regA = rnd16bit() & 0x0007;
-      var regB = rnd16bit() & 0x0007;
-      if (regB === regA) {aVal = bVal;}
-      if (regA === 0) {aVal = origVal;}
-      if (regB === 0) {bVal = origVal;}
-      var expectedVal;
-      if (bVal > 15) {
-        expectedVal = 0;
-      } else {
-        expectedVal = (aVal >>> bVal);
-      }
-      if ( (aVal & 0x8000) === 0x8000) {
-        //must sign extend
-        //the bval msb must be set to 1
-        expectedVal = (expectedVal | (0xFFFF0000 >> bVal)) & 0xFFFF;
-      }
-
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var carryFlag = 0;
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.regs[regB] = bVal;
-        dut.ram[0] = 0x2900 | (regA << 4) | (regB);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expB + ' in Reg' + regB, function() {
-        assert.equal(dut.regs[regB], expB);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('sftl ('+i+')', function() {
-      var origVal = rnd16bit();
-      var aVal = rnd16bit();
-      var bVal = rnd16bit() & 0x001F;
-      var regA = rnd16bit() & 0x0007;
-      var regB = rnd16bit() & 0x0007;
-      if (regB === regA) {aVal = bVal;}
-      if (regA === 0) {aVal = origVal;}
-      if (regB === 0) {bVal = origVal;}
-      var expectedVal;
-      var carryFlag;
-      if (bVal > 15) {
-        expectedVal = 0;
-        carryFlag = aVal !== 0;
-      } else {
-        expectedVal = (aVal << bVal) & 0xFFFF;
-        carryFlag = ((aVal << bVal) & 0xFFFF0000) !== 0;
-      }
-
-      var expA;
-      var expB;
-      if (regA === 0) {expA = expectedVal;} else {expA = aVal;}
-      if (regB === 0) {expB = expectedVal;} else {expB = bVal;}
-
-      var zeroFlag = (expectedVal === 0)|0;
-      var negFlag = ((expectedVal & 0x8000) === 0x8000)|0;
-      var expectedFlag = zeroFlag | (negFlag << 1) | (carryFlag << 2);
-      before(function() {
-        dut = new Cpu();
-        dut.regs[0] = origVal;
-        dut.regs[regA] = aVal;
-        dut.regs[regB] = bVal;
-        dut.ram[0] = 0x2A00 | (regA << 4) | (regB);
-        dut.tick();
-      });
-      it('should contain ' + expectedVal + ' in Reg' + 0, function() {
-        assert.equal(dut.regs[0], expectedVal);
-      });
-      it('should contain ' + expA + ' in Reg' + regA, function() {
-        assert.equal(dut.regs[regA], expA);
-      });
-      it('should contain ' + expB + ' in Reg' + regB, function() {
-        assert.equal(dut.regs[regB], expB);
-      });
-      it('should contain ' + expectedFlag + ' in AF', function() {
-        assert.equal(dut.regs[dut.regMap.AF], expectedFlag);  
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('jmp ('+i+')', function() {
-      var startAddr = rnd16bit();
-      var jumpAddr = rnd16bit();
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dut.regMap.JD] = jumpAddr;
-        dut.ram[startAddr] = 0x3000;
-        dut.regs[dut.pci] = startAddr;
-        dut.tick();
-      });
-      it('should contain ' + jumpAddr + ' in PC', function() {
-        assert.equal(dut.regs[dut.pci], jumpAddr);
-      });
-      it('should contain ' + jumpAddr + ' in JD', function() {
-        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('jmp0 ('+i+')', function() {
-      var startAddr = rnd16bit();
-      var jumpAddr = rnd16bit();
-      var jumpMask = rnd16bit() & 0x00FF;
-      var realMask = rnd16bit() & 0x00FF;
-
-      //50% of the time, make sure we get a jump
-      if ((rnd16bit() & 0x1) === 0) {
-        jumpMask = (~realMask) & 0x00FF;
-      }
-
-      var shouldJump = (jumpMask & realMask) === 0;
-      var finalPC;
-      if (shouldJump) {
-        finalPC = jumpAddr;
-      } else {
-        finalPC = startAddr + 1;
-      }  
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dut.regMap.JD] = jumpAddr;
-        dut.ram[startAddr] = 0x3000 | jumpMask;
-        dut.regs[dut.regMap.AF] = realMask;
-        dut.regs[dut.pci] = startAddr;
-        dut.tick();
-      });
-      it('should contain ' + finalPC + ' in PC', function() {
-        assert.equal(dut.regs[dut.pci], finalPC);
-      });
-      it('should contain ' + jumpAddr + ' in JD', function() {
-        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
-      });
-    });
-
-  }  
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('jmp1 ('+i+')', function() {
-      var startAddr = rnd16bit();
-      var jumpAddr = rnd16bit();
-      var jumpMask = rnd16bit() & 0x00FF;
-      var realMask = rnd16bit() & 0x00FF;
-
-      //50% of the time, make sure we get a jump
-      if ((rnd16bit() & 0x1) === 0) {
-        jumpMask = (~realMask) & 0x00FF;
-      }
-
-      var shouldJump = (jumpMask & realMask) !== 0;
-      var finalPC;
-      if (shouldJump) {
-        finalPC = jumpAddr;
-      } else {
-        finalPC = startAddr + 1;
-      }  
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dut.regMap.JD] = jumpAddr;
-        dut.ram[startAddr] = 0x3100 | jumpMask;
-        dut.regs[dut.regMap.AF] = realMask;
-        dut.regs[dut.pci] = startAddr;
-        dut.tick();
-      });
-      it('should contain ' + finalPC + ' in PC', function() {
-        assert.equal(dut.regs[dut.pci], finalPC);
-      });
-      it('should contain ' + jumpAddr + ' in JD', function() {
-        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('jmpf ('+i+')', function() {
-      var startAddr = rnd16bit();
-      var jumpLength = rnd16bit() & 0x00FF;
-      var finalAddr = (startAddr + jumpLength) & 0xFFFF;
-      var JDVal = rnd16bit();
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dut.regMap.JD] = JDVal;
-        dut.ram[startAddr] = 0x3200 | jumpLength;
-        dut.regs[dut.pci] = startAddr;
-        dut.tick();
-      });
-      it('should contain ' + finalAddr + ' in PC', function() {
-        assert.equal(dut.regs[dut.pci], finalAddr);
-      });
-      it('should contain ' + JDVal + ' in JD', function() {
-        assert.equal(dut.regs[dut.regMap.JD], JDVal);
-      });
-    });
-
-  }  
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('jmpb ('+i+')', function() {
-      var startAddr = rnd16bit();
-      var jumpLength = rnd16bit() & 0x00FF;
-      var finalAddr = (startAddr - jumpLength) & 0xFFFF;
-      var JDVal = rnd16bit();
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dut.regMap.JD] = JDVal;
-        dut.ram[startAddr] = 0x3300 | jumpLength;
-        dut.regs[dut.pci] = startAddr;
-        dut.tick();
-      });
-      it('should contain ' + finalAddr + ' in PC', function() {
-        assert.equal(dut.regs[dut.pci], finalAddr);
-      });
-      it('should contain ' + JDVal + ' in JD', function() {
-        assert.equal(dut.regs[dut.regMap.JD], JDVal);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('call0 ('+i+')', function() {
-      var startAddr = rnd16bit();
-      var jumpAddr = rnd16bit();
-      var jumpMask = rnd16bit() & 0x00FF;
-      var realMask = rnd16bit() & 0x00FF;
-      var stackStart = rnd16bit();
-      var stackEnd;
-      var origStackValue = rnd16bit();
-      var ramEnd;
-
-      //50% of the time, make sure we get a jump
-      if ((rnd16bit() & 0x1) === 0) {
-        jumpMask = (~realMask) & 0x00FF;
-      }
-
-      var shouldJump = (jumpMask & realMask) === 0;
-      var finalPC;
-      if (shouldJump) {
-        finalPC = jumpAddr;
-        stackEnd = stackStart - 1;
-        ramEnd = (startAddr+1) & 0xFFFF;
-      } else {
-        finalPC = startAddr + 1;
-        stackEnd = stackStart;
-        ramEnd = origStackValue;
-      }  
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dut.regMap.JD] = jumpAddr;
-        dut.ram[startAddr] = 0x3400 | jumpMask;
-        dut.regs[dut.regMap.AF] = realMask;
-        dut.regs[dut.pci] = startAddr;
-
-        dut.regs[dut.regMap.SP] = stackStart;
-        dut.ram[stackEnd] = origStackValue;
-
-        dut.tick();
-      });
-      it('should contain ' + finalPC + ' in PC', function() {
-        assert.equal(dut.regs[dut.pci], finalPC);
-      });
-      it('should contain ' + jumpAddr + ' in JD', function() {
-        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
-      });
-      it('should contain ' + stackEnd + ' in SP', function() {
-        assert.equal(dut.regs[dut.regMap.SP], stackEnd);
-      });
-      it('should contain ' + ramEnd + ' in RAM ' + stackEnd, function() {
-        assert.equal(dut.ram[stackEnd], ramEnd);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('call1 ('+i+')', function() {
-      var startAddr = rnd16bit();
-      var jumpAddr = rnd16bit();
-      var jumpMask = rnd16bit() & 0x00FF;
-      var realMask = rnd16bit() & 0x00FF;
-      var stackStart = rnd16bit();
-      var stackEnd;
-      var origStackValue = rnd16bit();
-      var ramEnd;
-
-      //50% of the time, make sure we get a jump
-      if ((rnd16bit() & 0x1) === 0) {
-        jumpMask = (~realMask) & 0x00FF;
-      }
-
-      var shouldJump = (jumpMask & realMask) !== 0;
-      var finalPC;
-      if (shouldJump) {
-        finalPC = jumpAddr;
-        stackEnd = stackStart - 1;
-        ramEnd = (startAddr+1) & 0xFFFF;
-      } else {
-        finalPC = startAddr + 1;
-        stackEnd = stackStart;
-        ramEnd = origStackValue;
-      }  
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dut.regMap.JD] = jumpAddr;
-        dut.ram[startAddr] = 0x3500 | jumpMask;
-        dut.regs[dut.regMap.AF] = realMask;
-        dut.regs[dut.pci] = startAddr;
-
-        dut.regs[dut.regMap.SP] = stackStart;
-        dut.ram[stackEnd] = origStackValue;
-
-        dut.tick();
-      });
-      it('should contain ' + finalPC + ' in PC', function() {
-        assert.equal(dut.regs[dut.pci], finalPC);
-      });
-      it('should contain ' + jumpAddr + ' in JD', function() {
-        assert.equal(dut.regs[dut.regMap.JD], jumpAddr);
-      });
-      it('should contain ' + stackEnd + ' in SP', function() {
-        assert.equal(dut.regs[dut.regMap.SP], stackEnd);
-      });
-      it('should contain ' + ramEnd + ' in RAM ' + stackEnd, function() {
-        assert.equal(dut.ram[stackEnd], ramEnd);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('ret0 ('+i+')', function() {
-      var startAddr = rnd16bit();
-      var jumpAddr = rnd16bit();
-      var jumpMask = rnd16bit() & 0x00FF;
-      var realMask = rnd16bit() & 0x00FF;
-      var stackStart = rnd16bit();
-      var stackEnd;
-      var origStackValue = rnd16bit();
-      var ramEnd;
-      var JDend = rnd16bit();
-
-      //50% of the time, make sure we get a jump
-      if ((rnd16bit() & 0x1) === 0) {
-        jumpMask = (~realMask) & 0x00FF;
-      }
-
-      var shouldJump = (jumpMask & realMask) === 0;
-      var finalPC;
-      if (shouldJump) {
-        finalPC = jumpAddr;
-        stackEnd = stackStart + 1;
-        ramEnd = origStackValue;
-      } else {
-        finalPC = startAddr + 1;
-        stackEnd = stackStart;
-        ramEnd = jumpAddr;
-      }  
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dut.regMap.JD] = JDend;
-        dut.ram[startAddr] = 0x3600 | jumpMask;
-        dut.regs[dut.regMap.AF] = realMask;
-        dut.regs[dut.pci] = startAddr;
-
-        dut.regs[dut.regMap.SP] = stackStart;
-        dut.ram[stackEnd] = origStackValue;
-        dut.ram[stackStart] = jumpAddr;
-
-        dut.tick();
-      });
-      it('should contain ' + finalPC + ' in PC', function() {
-        assert.equal(dut.regs[dut.pci], finalPC);
-      });
-      it('should contain ' + JDend + ' in JD', function() {
-        assert.equal(dut.regs[dut.regMap.JD], JDend);
-      });
-      it('should contain ' + stackEnd + ' in SP', function() {
-        assert.equal(dut.regs[dut.regMap.SP], stackEnd);
-      });
-      it('should contain ' + ramEnd + ' in RAM ' + stackEnd, function() {
-        assert.equal(dut.ram[stackEnd], ramEnd);
-      });
-    });
-
-  }
-
-  for (i = 0; i < iterations; i++) {
-
-    describe('int ('+i+')', function() {
-      var startAddr = rnd16bit();
-      var intNum = rnd16bit() & 0xF;
-      var jumpAddr = intNum;
-      var JDend = rnd16bit();
-
-      before(function() {
-        dut = new Cpu();
-        dut.regs[dut.regMap.JD] = JDend;
-        dut.ram[startAddr] = 0x3800 | (intNum << 4);
-        dut.regs[dut.pci] = startAddr;
-        dut.tick();
-      });
-      it('should contain ' + jumpAddr + ' in PC', function() {
-        assert.equal(dut.regs[dut.pci], jumpAddr);
-      });
-      it('should contain ' + JDend + ' in JD', function() {
-        assert.equal(dut.regs[dut.regMap.JD], JDend);
-      });
-    });
-
-  }
-  
-});
-*/
