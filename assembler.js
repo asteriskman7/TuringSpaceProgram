@@ -43,7 +43,7 @@ Assembler.prototype.assemble = function(code) {
   var lineNum;
   var line;
   var currentLabel;
-  var addr = 0xFFFF;
+  var addr = 0;
   var splitLine;
   var cmd;
 
@@ -55,7 +55,11 @@ Assembler.prototype.assemble = function(code) {
   var asciiLengthStart;
   var asciiLengthEnd;
 
+  var incrAddr;
+
   for (lineNum = 0; lineNum < lines.length; lineNum++) {
+    incrAddr = true;
+
     rawLine = lines[lineNum];
     line = rawLine;
     currentLabel = undefined;
@@ -114,7 +118,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x0000 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -123,7 +126,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x0200 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -131,7 +133,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x0300 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -139,7 +140,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x0400 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -148,7 +148,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x0500 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -157,7 +156,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x0600 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -165,7 +163,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x0700 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -173,7 +170,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '')
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x0C00 | (rega << 4); 
             this.debug[addr] = rawLine;
           }
@@ -182,7 +178,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '')
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x0D00 | (rega << 4); 
             this.debug[addr] = rawLine;
           }
@@ -195,7 +190,6 @@ Assembler.prototype.assemble = function(code) {
             if (isNaN(constant)) {
               return 'ERROR: Illegal constant "' + splitLine[2] + '" on line ' + lineNum;
             } else {
-              addr = (addr + 1) & 0xFFFF;
               this.ram[addr] = 0x1000 | (rega << 4) | (constant & 0x0F); 
               this.debug[addr] = rawLine;
             }
@@ -209,7 +203,6 @@ Assembler.prototype.assemble = function(code) {
             if (isNaN(constant)) {
               return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
             } else {
-              addr = (addr + 1) & 0xFFFF;
               this.ram[addr] = 0x1100 | ((constant & 0x0F) << 4) | regb; 
               this.debug[addr] = rawLine;
             }
@@ -219,7 +212,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x2000 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -232,7 +224,6 @@ Assembler.prototype.assemble = function(code) {
             if (isNaN(constant)) {
               return 'ERROR: Illegal constant "' + splitLine[2] + '" on line ' + lineNum;
             } else {
-              addr = (addr + 1) & 0xFFFF;
               this.ram[addr] = 0x2100 | (rega << 4) | (constant & 0x0F); 
               this.debug[addr] = rawLine;
             }
@@ -242,7 +233,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x2200 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -255,7 +245,6 @@ Assembler.prototype.assemble = function(code) {
             if (isNaN(constant)) {
               return 'ERROR: Illegal constant "' + splitLine[2] + '" on line ' + lineNum;
             } else {
-              addr = (addr + 1) & 0xFFFF;
               this.ram[addr] = 0x2300 | (rega << 4) | (constant & 0x0F); 
               this.debug[addr] = rawLine;
             }
@@ -265,7 +254,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x2400 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -274,7 +262,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x2500 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -283,7 +270,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x2600 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -292,7 +278,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x2700 | (rega << 4); 
             this.debug[addr] = rawLine;
           }
@@ -301,7 +286,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x2800 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -310,7 +294,6 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x2900 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
@@ -319,13 +302,11 @@ Assembler.prototype.assemble = function(code) {
           if ((rega === undefined) || (regb === undefined)) {
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '') + ' ' + (regb === undefined ? splitLine[2] : '');
           } else {
-            addr = (addr + 1) & 0xFFFF;
             this.ram[addr] = 0x2A00 | (rega << 4) | regb; 
             this.debug[addr] = rawLine;
           }
           break;
         case 'jmp': 
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3000;
           this.debug[addr] = rawLine;
           break;
@@ -333,7 +314,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3000 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -341,7 +321,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3100 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -349,7 +328,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3200 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -357,7 +335,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3300 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -365,7 +342,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3400 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -373,7 +349,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3500 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -381,7 +356,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3600 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -390,7 +364,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3700 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
@@ -398,7 +371,6 @@ Assembler.prototype.assemble = function(code) {
           if (isNaN(constant)) {
             return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
-          addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3800 | ((constant & 0xF) << 4);
           this.debug[addr] = rawLine;
           break;
@@ -408,9 +380,13 @@ Assembler.prototype.assemble = function(code) {
 
     }
 
-    this.genHex();
+    if (incrAddr) {
+      addr = (addr + 1) & 0xFFFF;
+    }
 
   }
+
+  this.genHex();
 
   return '';
 };
