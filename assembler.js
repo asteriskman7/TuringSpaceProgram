@@ -51,17 +51,45 @@ Assembler.prototype.assemble = function(code) {
   var regb;
   var constant;
 
+  var asciiLength;
+  var asciiLengthStart;
+  var asciiLengthEnd;
+
   for (lineNum = 0; lineNum < lines.length; lineNum++) {
     rawLine = lines[lineNum];
     line = rawLine;
     currentLabel = undefined;
 
+    line = line.replace(/^\s+/, ''); //only trim left so we don't disturb ascii directives
+
     if (line[0] === '.') {
       //don't want to clean a directive line immediately in case it contains formatted strings
+
+      console.log('directive!');
+      switch (line.split(/\s/)[0]) {
+        case '.addr':
+          line = this.cleanLine(line);
+          addr = parseInt(line.split(' ')[1]);
+          addr = (addr - 1) & 0xFFFF; //subtract 1 off because actual instructions will increment the addr themselves
+          if (isNaN(addr)) {
+            return 'ERROR: Unrecognized integer "' + line.split(' ')[1] + '" in .addr on line ' + lineNum;
+          }
+          break;
+        case '.ascii':
+          break;
+        case '.hex':
+          break;
+        case '.int':
+          break;
+        default:
+          return 'ERROR: Unknown directive "' + line.split(/\s/)[0] + '" found on line ' + lineNum;
+      }
+
     } else {
       //ascii constants can be corrupted by cleanLine
       //double spaces, tabs, semicolons will all be broken
       line = this.cleanLine(line);
+      //console.log('cleanLine=' + line);
 
       splitLine = line.split(' ');
 
@@ -70,7 +98,7 @@ Assembler.prototype.assemble = function(code) {
         currentLabel = splitLine[0];
         splitLine = splitLine.slice(1);
         if (this.labelMap[currentLabel] !== undefined) {
-          return 'ERROR: Redefinition of ' + currentLabel + ' on line ' + line + ' after being originally defined on line ' + labelMap[currentLabel];
+          return 'ERROR: Redefinition of ' + currentLabel + ' on line ' + lineNum + ' after being originally defined on line ' + labelMap[currentLabel];
         } else {
           this.labelMap[currentLabel] = addr;
         }
@@ -93,7 +121,7 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'ldl':
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x0200 | (constant & 0xFF);
@@ -175,6 +203,7 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'iow':
           if ((regb === undefined)) {
+            //console.log('iow line=' + line);
             return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (regb === undefined ? splitLine[2] : '')
           } else {
             if (isNaN(constant)) {
@@ -302,7 +331,7 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'jmp0':
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3000 | (constant & 0xFF);
@@ -310,7 +339,7 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'jmp1':
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3100 | (constant & 0xFF);
@@ -318,7 +347,7 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'jmpf':
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3200 | (constant & 0xFF);
@@ -326,7 +355,7 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'jmpb':
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3300 | (constant & 0xFF);
@@ -334,7 +363,7 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'call0':
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3400 | (constant & 0xFF);
@@ -342,7 +371,7 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'call1':
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3500 | (constant & 0xFF);
@@ -350,15 +379,16 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'ret0':
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3600 | (constant & 0xFF);
           this.debug[addr] = rawLine;
           break;
         case 'ret1':
+          //console.log('ret1 constant "' + splitLine[1] + '" =' + constant);
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3700 | (constant & 0xFF);
@@ -366,7 +396,7 @@ Assembler.prototype.assemble = function(code) {
           break;
         case 'int':
           if (isNaN(constant)) {
-            return 'ERROR: Illegal constant "' + constant + '" on line ' + lineNum;
+            return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
           }
           addr = (addr + 1) & 0xFFFF;
           this.ram[addr] = 0x3800 | ((constant & 0xF) << 4);

@@ -5,7 +5,7 @@ var dut = new Assembler();
 
 var seed = Math.floor(Math.random() * 10000);  //this should be the only use of Math.random() in this file
 Math.random = function() {throw "NEVER USE Math.random() IN TESTS"};
-//seed = 9038;
+//seed = 1023;
 
 var iterations = 1;
 
@@ -139,6 +139,21 @@ function rndConst(forceMask) {
           CStr = String.fromCharCode((C & 0xFF00) >> 8) + CStr;
         }
       }
+      if (CStr.indexOf('"') !== -1) { //"
+        CStr = '\\x22';
+        mask = '';
+        CVal = 0x22 & forceMask;
+      }
+      if (CStr.indexOf(' ') !== -1) { //"
+        CStr = '\\x20';
+        mask = '';
+        CVal = 0x20 & forceMask;
+      }
+      if (CStr.indexOf(';') !== -1) { //"
+        CStr = '\\x3b';
+        mask = '';
+        CVal = 0x3b & forceMask;
+      }
       CStr = '"' + CStr + '"' + mask; 
       //console.log('ascii and C=' + C + ' and cval=' + CVal);
       break;
@@ -181,7 +196,7 @@ function arrayToHex (a) {
 }
 
 function bin2hex(b) {
-  var result = '';
+  var result = '';                          
   for (var i = 0; i < b.length; i++) {
     result += ('00' + b.charCodeAt(i).toString(16)).substr(-2) + ' ';
   }
@@ -389,8 +404,11 @@ describe('Assembler', function() {
       test: function() {
         var op = 'iow';
         var rega = rndReg();
+        //console.log('iow reg index = ' + rega.index + ' name=' + rega.name);
         var constant = rndConst(0x000F);
         var code = rndCodeFormat([op, constant.str, rega.name]);
+        //console.log('iow line = ' + code);
+        //console.log('iow const val=' + constant.val + ' str=' + constant.str); 
         var binary = 0x1100 | (constant.val << 4) | rega.index;
         return {code: code, result: [binary]};
       }
@@ -601,6 +619,7 @@ describe('Assembler', function() {
         var constant = rndConst(0x00FF);
         var code = rndCodeFormat([op, constant.str]);
         var binary = 0x3700 | constant.val;
+        //console.log('code=' + code);
         return {code: code, result: [binary]};
       }
     },
@@ -658,4 +677,36 @@ describe('Assembler', function() {
     }
   }
 
+  describe.only('.addr (' + i + ')', function() {
+    var testResult = [];
+    var testHex;
+    var rc;
+    before(function() {
+      dut = new Assembler();
+
+      var addr = rnd16bit();
+      var addrStr = rnd1bit() ? addr.toString(10) : '0x' + addr.toString(16);  
+      var comment = rnd1bit() ? ';' + rndTxt(rndRange(0,64)) : '';
+      var label = rnd1bit() ? rndSpace() + ':' + rndStr(rndRange(1, 32)) : '';
+      var testCode = label + '.addr' + rndSpace() + addrStr + comment + '\n';
+      testCode += 'jmp';
+
+      testResult[addr] = 0x3000;
+      testHex = arrayToHex(testResult);
+
+      rc = dut.assemble(testCode);
+    });
+
+    it('should have correct ram', function() {
+      assert.deepEqual(dut.ram, testResult); 
+    });
+    it('should have correct hex', function() {
+      assert.equal(dut.hex, testHex);
+    });
+    it('should have empty return code', function() {
+      assert.equal(rc, '');
+    });
+  });
+
 });
+
