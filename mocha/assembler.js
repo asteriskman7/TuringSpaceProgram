@@ -5,7 +5,7 @@ var dut = new Assembler();
 
 var seed = Math.floor(Math.random() * 10000);  //this should be the only use of Math.random() in this file
 Math.random = function() {throw "NEVER USE Math.random() IN TESTS"};
-//seed = 1023;
+//seed = 4270;
 
 var iterations = 1;
 
@@ -677,7 +677,7 @@ describe('Assembler', function() {
     }
   }
 
-  describe.only('.addr (' + i + ')', function() {
+  describe('.addr (' + i + ')', function() {
     var testResult = [];
     var testHex;
     var rc;
@@ -688,7 +688,7 @@ describe('Assembler', function() {
       var addrStr = rnd1bit() ? addr.toString(10) : '0x' + addr.toString(16);  
       var comment = rnd1bit() ? ';' + rndTxt(rndRange(0,64)) : '';
       var label = rnd1bit() ? rndSpace() + ':' + rndStr(rndRange(1, 32)) : '';
-      var testCode = label + '.addr' + rndSpace() + addrStr + comment + '\n';
+      var testCode = label + rndSpace() + '.addr' + rndSpace() + addrStr + comment + '\n';
       testCode += 'jmp';
 
       testResult[addr] = 0x3000;

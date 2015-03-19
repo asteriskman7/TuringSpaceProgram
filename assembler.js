@@ -66,15 +66,28 @@ Assembler.prototype.assemble = function(code) {
 
     line = line.replace(/^\s+/, ''); //only trim left so we don't disturb ascii directives
 
+    if (line[0] === ':') {
+      splitLine = line.split(/\s/);
+      currentLabel = splitLine[0];
+      if (this.labelMap[currentLabel] !== undefined) {
+        return 'ERROR: Redefinition of ' + currentLabel + ' on line ' + lineNum + ' after being originally defined on line ' + this.labelMap[currentLabel];
+      }
+      //assignment of an address to the label has to be done later in case a directive changes the current address
+      //remove label and all spaces preceding the opcode mnemonic
+      line = splitLine.slice(1).join(' ').replace(/^\s+/, '');
+    }
+
     if (line[0] === '.') {
       //don't want to clean a directive line immediately in case it contains formatted strings
 
       console.log('directive!');
-      switch (line.split(/\s/)[0]) {
+      splitLine = line.split(/\s/);
+      switch (splitLine[0]) {
         case '.addr':
           line = this.cleanLine(line);
           addr = parseInt(line.split(' ')[1]);
-          addr = (addr - 1) & 0xFFFF; //subtract 1 off because actual instructions will increment the addr themselves
+          addr = addr & 0xFFFF;
+          incrAddr = false;
           if (isNaN(addr)) {
             return 'ERROR: Unrecognized integer "' + line.split(' ')[1] + '" in .addr on line ' + lineNum;
           }
@@ -97,6 +110,7 @@ Assembler.prototype.assemble = function(code) {
 
       splitLine = line.split(' ');
 
+      /*
       if (line[0] === ':') {
         //line is labeled
         currentLabel = splitLine[0];
@@ -107,6 +121,7 @@ Assembler.prototype.assemble = function(code) {
           this.labelMap[currentLabel] = addr;
         }
       }
+      */
 
       cmd = splitLine[0];
       rega = this.regMap[splitLine[1]]; 
@@ -378,6 +393,10 @@ Assembler.prototype.assemble = function(code) {
           return 'ERROR: Unknown command "' + cmd + '" on line ' + lineNum;
       }
 
+    }
+
+    if (currentLabel !== undefined) {
+      this.labelMap[currentLabel] = addr;
     }
 
     if (incrAddr) {
