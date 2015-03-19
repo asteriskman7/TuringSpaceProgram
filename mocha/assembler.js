@@ -708,5 +708,39 @@ describe('Assembler', function() {
     });
   });
 
+  describe.only('.ascii (' + i + ')', function() {
+    var testResult = [];
+    var testHex;
+    var rc;
+    before(function() {
+      dut = new Assembler();
+
+      var label = rnd1bit() ? rndSpace() + ':' + rndStr(rndRange(1, 32)) : '';
+      var strLen = rndRange(1, 32);
+      var str = rndTxt(strLen);
+      var testCode = label + rndSpace() + '.ascii' + rndSpace() + strLen + ' ' + str;
+      var charIndex;
+
+      for (charIndex = 0; charIndex < strLen; charIndex = charIndex + 2) {
+        var byte1 = str.charCodeAt(charIndex);
+        var byte2 = str.charCodeAt(charIndex+1)|0;
+        testResult[charIndex >> 1] = (byte1 << 8) | (byte2);
+      }
+      testHex = arrayToHex(testResult);
+
+      rc = dut.assemble(testCode);
+    });
+
+    it('should have correct ram', function() {
+      assert.deepEqual(dut.ram, testResult); 
+    });
+    it('should have correct hex', function() {
+      assert.equal(dut.hex, testHex);
+    });
+    it('should have empty return code', function() {
+      assert.equal(rc, '');
+    });
+  });
+
 });
 

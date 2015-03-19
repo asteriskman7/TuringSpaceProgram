@@ -45,6 +45,7 @@ Assembler.prototype.assemble = function(code) {
   var currentLabel;
   var addr = 0;
   var splitLine;
+  var cleanLine;
   var cmd;
 
   var rega;
@@ -54,6 +55,8 @@ Assembler.prototype.assemble = function(code) {
   var asciiLength;
   var asciiLengthStart;
   var asciiLengthEnd;
+  var asciiData;
+  var asciiIndex;
 
   var incrAddr;
 
@@ -65,6 +68,9 @@ Assembler.prototype.assemble = function(code) {
     currentLabel = undefined;
 
     line = line.replace(/^\s+/, ''); //only trim left so we don't disturb ascii directives
+    if ((line.length === 0) || (line[0] === ';')) {
+      continue;
+    }
 
     if (line[0] === ':') {
       splitLine = line.split(/\s/);
@@ -93,6 +99,29 @@ Assembler.prototype.assemble = function(code) {
           }
           break;
         case '.ascii':
+          cleanLine = this.cleanLine(line);
+          splitLine = cleanLine.split(' ');
+          asciiLength = parseInt(splitLine[1]);
+          if (isNaN(asciiLength)) {
+            return 'ERROR: illegal ascii length "' + splitLine[1] + '" in .ascii on line ' + lineNum;
+          }
+          asciiLengthStart = line.indexOf(splitLine[1]);
+          asciiLengthEnd = line.indexOf(' ', asciiLengthStart);
+          asciiData = line.substr(asciiLengthEnd + 1);
+          while (asciiData.length < asciiLength) {
+            asciiData += '\x00';
+          }
+          asciiData = asciiData.substr(0, asciiLength);
+          if ((asciiData.length % 2) == 1) {
+            asciiData += '\x00';
+          }
+
+          for (asciiIndex = 0; asciiIndex < asciiLength; asciiIndex = asciiIndex + 2) {
+            this.ram[addr] = (asciiData.charCodeAt(asciiIndex) << 8) | (asciiData.charCodeAt(asciiIndex + 1));
+            addr = (addr + 1) & 0xFFFF;
+            incrAddr = false;
+          }
+
           break;
         case '.hex':
           break;
@@ -109,19 +138,6 @@ Assembler.prototype.assemble = function(code) {
       //console.log('cleanLine=' + line);
 
       splitLine = line.split(' ');
-
-      /*
-      if (line[0] === ':') {
-        //line is labeled
-        currentLabel = splitLine[0];
-        splitLine = splitLine.slice(1);
-        if (this.labelMap[currentLabel] !== undefined) {
-          return 'ERROR: Redefinition of ' + currentLabel + ' on line ' + lineNum + ' after being originally defined on line ' + labelMap[currentLabel];
-        } else {
-          this.labelMap[currentLabel] = addr;
-        }
-      }
-      */
 
       cmd = splitLine[0];
       rega = this.regMap[splitLine[1]]; 
