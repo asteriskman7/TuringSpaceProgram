@@ -24,6 +24,8 @@ function Cpu() {
     JD: 13,
     ZERO: 15
   };
+  
+  this.devices = [];
 
   this.reset();
 
@@ -73,6 +75,7 @@ Cpu.prototype.tick = function() {
   var bVal;
   var jumpMask;
   var jumpDist;
+  var device;
 
 
   switch (opClass) {
@@ -114,6 +117,24 @@ Cpu.prototype.tick = function() {
       }
       break;
     case 0x1000: //IO
+      switch (opCmd) {
+        case 0x0000: //ior
+          device = this.devices[opArgB];
+          if (device === undefined) {
+            this.regs[opArgA] = 0;
+          } else {
+            this.regs[opArgA] = device.read();
+          }
+          break;
+        case 0x0100: //iow
+          device = this.devices[opArgB];
+          if (device !== undefined) {
+            device.write(this.regs[opArgA]);
+          }
+          break;
+        default:
+          this.opcodeError(opcode);
+      }
       break;
     case 0x2000: //ALU
       switch (opCmd) {
