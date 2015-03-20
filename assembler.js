@@ -57,6 +57,15 @@ Assembler.prototype.assemble = function(code) {
   var asciiLengthEnd;
   var asciiData;
   var asciiIndex;
+  
+  var hexData;
+  var hexIndex;
+  var nib0;
+  var nib1;
+  var nib2;
+  var nib3;
+  
+  var intVal;
 
   var incrAddr;
 
@@ -86,7 +95,7 @@ Assembler.prototype.assemble = function(code) {
     if (line[0] === '.') {
       //don't want to clean a directive line immediately in case it contains formatted strings
 
-      console.log('directive!');
+      //console.log('directive!');
       splitLine = line.split(/\s/);
       switch (splitLine[0]) {
         case '.addr':
@@ -118,14 +127,35 @@ Assembler.prototype.assemble = function(code) {
 
           for (asciiIndex = 0; asciiIndex < asciiLength; asciiIndex = asciiIndex + 2) {
             this.ram[addr] = (asciiData.charCodeAt(asciiIndex) << 8) | (asciiData.charCodeAt(asciiIndex + 1));
+            this.debug[addr] = rawLine + ' (' + asciiIndex + ')';
             addr = (addr + 1) & 0xFFFF;
-            incrAddr = false;
           }
+          incrAddr = false;
 
           break;
         case '.hex':
+          line = this.cleanLine(line);
+          hexData = line.split(' ')[1];
+          //console.log('hex data ' + hexData);
+          for (hexIndex = 0; hexIndex < hexData.length; hexIndex = hexIndex + 4) {
+            nib0 = parseInt(hexData[hexIndex + 0], 16)|0;
+            nib1 = parseInt(hexData[hexIndex + 1], 16)|0;
+            nib2 = parseInt(hexData[hexIndex + 2], 16)|0;
+            nib3 = parseInt(hexData[hexIndex + 3], 16)|0;
+            this.ram[addr] = (nib0 << 12) | (nib1 << 8) | (nib2 << 4) | nib3;
+            this.debug[addr] = rawLine + ' (' + hexIndex + ')';
+            addr = (addr + 1) & 0xFFFF;
+          }
+          incrAddr = false;
           break;
         case '.int':
+          splitLine = this.cleanLine(line).split(' ');
+          intVal = parseInt(splitLine[1],10);
+          if (isNaN(intVal)) {
+            return 'ERROR: Unrecognized integer "' + splitLine[1] + '" in .int on line ' + lineNum;
+          }
+          this.ram[addr] = intVal;
+          this.debug[addr] = rawLine;
           break;
         default:
           return 'ERROR: Unknown directive "' + line.split(/\s/)[0] + '" found on line ' + lineNum;

@@ -708,7 +708,7 @@ describe('Assembler', function() {
     });
   });
 
-  describe.only('.ascii (' + i + ')', function() {
+  describe('.ascii (' + i + ')', function() {
     var testResult = [];
     var testHex;
     var rc;
@@ -741,6 +741,81 @@ describe('Assembler', function() {
       assert.equal(rc, '');
     });
   });
+  
+  describe('.hex (' + i + ')', function() {
+    var testResult = [];
+    var testHex;
+    var rc;
+    before(function() {
+      dut = new Assembler();
+
+      var label = rnd1bit() ? rndSpace() + ':' + rndStr(rndRange(1, 32)) : '';
+      var comment = rnd1bit() ? ';' + rndTxt(rndRange(0,64)) : '';
+      var hexLen = rndRange(1, 32);
+      var hexData = '';
+      var charIndex;
+      for (charIndex = 0; charIndex < hexLen; charIndex++) {
+        hexData += (rnd16bit() & 0xf).toString(16);
+      }
+      
+      for (charIndex = 0; charIndex < hexLen; charIndex = charIndex + 4) {
+        var nib0 = parseInt(hexData[charIndex+0],16)|0;
+        var nib1 = parseInt(hexData[charIndex+1],16)|0;
+        var nib2 = parseInt(hexData[charIndex+2],16)|0;
+        var nib3 = parseInt(hexData[charIndex+3],16)|0;
+        testResult[charIndex >> 2] = (nib0 << 12 ) | (nib1 << 8) | (nib2 << 4) | (nib3);
+      }
+      
+      var testCode = label + rndSpace() + '.hex' + rndSpace() + hexData + rndSpace() + comment;
+      //console.log(testCode);
+
+      testHex = arrayToHex(testResult);
+
+      rc = dut.assemble(testCode);
+    });
+
+    it('should have correct ram', function() {
+      assert.deepEqual(dut.ram, testResult); 
+    });
+    it('should have correct hex', function() {
+      assert.equal(dut.hex, testHex);
+    });
+    it('should have empty return code', function() {
+      assert.equal(rc, '');
+    });
+  });
+  
+  describe('.int (' + i + ')', function() {
+    var testResult = [];
+    var testHex;
+    var rc;
+    before(function() {
+      dut = new Assembler();
+
+      var label = rnd1bit() ? rndSpace() + ':' + rndStr(rndRange(1, 32)) : '';
+      var comment = rnd1bit() ? ';' + rndTxt(rndRange(0,64)) : '';
+      var intVal = rnd16bit();
+      
+      testResult[0] = intVal;
+      
+      var testCode = label + rndSpace() + '.int' + rndSpace() + intVal.toString(10) + rndSpace() + comment;
+      //console.log(testCode);
+
+      testHex = arrayToHex(testResult);
+
+      rc = dut.assemble(testCode);
+    });
+
+    it('should have correct ram', function() {
+      assert.deepEqual(dut.ram, testResult); 
+    });
+    it('should have correct hex', function() {
+      assert.equal(dut.hex, testHex);
+    });
+    it('should have empty return code', function() {
+      assert.equal(rc, '');
+    });
+  });  
 
 });
 
