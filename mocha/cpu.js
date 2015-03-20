@@ -1,5 +1,6 @@
 var assert = require('assert');
 var Cpu = require('../cpu.js');
+var DeviceNull = require('../devices.js');
 
 var dut = new Cpu();
 
@@ -291,6 +292,48 @@ describe('Cpu', function() {
       });
     });
 
+  }
+  
+  for (i = 0; i < iterations; i++) {
+    describe('ior ('+i+')', function() {
+      var origVal = rnd16bit();
+      var expectedVal = rnd16bit();
+      var dstReg = rnd16bit() & 0x0007;
+      var deviceNum = rnd16bit() & 0x000F;
+      
+      before(function() {
+        dut = new Cpu();
+        dut.regs[dstReg] = origVal;
+        dut.ram[0] = 0x1000 | (dstReg << 4) | (deviceNum);
+        dut.devices[deviceNum] = new DeviceNull('TEST_DEVICE');
+        dut.devices[deviceNum].value = expectedVal;
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in Reg' + dstReg, function() {
+        assert.equal(dut.regs[dstReg], expectedVal);
+      });
+    });
+  }
+  
+   for (i = 0; i < iterations; i++) {
+    describe('iow ('+i+')', function() {
+      var origVal = rnd16bit();
+      var expectedVal = rnd16bit();
+      var srcReg = rnd16bit() & 0x0007;
+      var deviceNum = rnd16bit() & 0x000F;
+      
+      before(function() {
+        dut = new Cpu();
+        dut.regs[srcReg] = expectedVal;
+        dut.ram[0] = 0x1100 | (srcReg << 4) | (deviceNum);
+        dut.devices[deviceNum] = new DeviceNull('TEST_DEVICE');
+        dut.devices[deviceNum].value = origVal;
+        dut.tick();
+      });
+      it('should contain ' + expectedVal + ' in device' + deviceNum, function() {
+        assert.equal(dut.devices[deviceNum].value, expectedVal);
+      });
+    });
   }
 
   for (i = 0; i < iterations; i++) {
