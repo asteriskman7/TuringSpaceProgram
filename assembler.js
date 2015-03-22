@@ -31,11 +31,12 @@ function Assembler() {
     REG_UNDEF14: 14,
     ZERO: 15
   };
+  this.mode = 0;
 }
 
 //take a string as input, assemble and enter the result in this.ram and this.hex
 //if there are any error messages, return a non-empty string describing the error
-Assembler.prototype.assemble = function(code) {
+Assembler.prototype.assemble = function(code, pass) {
 
   var lines = code.split("\n");
   
@@ -68,6 +69,13 @@ Assembler.prototype.assemble = function(code) {
   var intVal;
 
   var incrAddr;
+  var rc;
+  
+  if (pass === undefined) {
+    this.mode = 0;
+  } else {
+    this.mode = 1;
+  }
 
   for (lineNum = 0; lineNum < lines.length; lineNum++) {
     incrAddr = true;
@@ -84,9 +92,11 @@ Assembler.prototype.assemble = function(code) {
     if (line[0] === ':') {
       splitLine = line.split(/\s/);
       currentLabel = splitLine[0];
-      if (this.labelMap[currentLabel] !== undefined) {
+      
+      if ((this.labelMap[currentLabel] !== undefined) && (this.mode == 0)) {
         return 'ERROR: Redefinition of ' + currentLabel + ' on line ' + lineNum + ' after being originally defined on line ' + this.labelMap[currentLabel];
       }
+      
       //assignment of an address to the label has to be done later in case a directive changes the current address
       //remove label and all spaces preceding the opcode mnemonic
       line = splitLine.slice(1).join(' ').replace(/^\s+/, '');
@@ -450,10 +460,18 @@ Assembler.prototype.assemble = function(code) {
     }
 
   }
+  
+  if (this.mode === 0) {
+    rc = this.assemble(code, 1);
+    this.genHex();
+    return rc;
+  } else {
+    return '';
+  }
 
-  this.genHex();
+  //this.genHex();
 
-  return '';
+  //return '';
 };
 
 Assembler.prototype.cleanLine = function(line) {
@@ -555,7 +573,10 @@ Assembler.prototype.stringToInt = function(string) {
     }
   } else if (string.search(/^:/) !== -1) {
     value = this.labelMap[string];
-    if (value === undefined) {
+    //console.log('the value of label "' + string + '" is ' + value);
+    if (this.mode === 0) {
+      value = value|0;
+    } else if (value === undefined) {
       return NaN;
     }
   } else {
