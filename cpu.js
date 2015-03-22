@@ -283,12 +283,12 @@ Cpu.prototype.tick = function() {
           jumpDist = (opArgA << 4) | opArgB;
           this.regs[this.pci] = (this.regs[this.pci] + jumpDist) & 0xFFFF;
           pcJump = true;
-          break
+          break;
         case 0x0300: //jmpb
           jumpDist = (opArgA << 4) | opArgB;
           this.regs[this.pci] = (this.regs[this.pci] - jumpDist) & 0xFFFF;
           pcJump = true;
-          break
+          break;
         case 0x0400: //call0
           jumpMask = ((opArgA << 4) | opArgB) & this.regs[this.regMap.AF];
           if (jumpMask === 0) {

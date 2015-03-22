@@ -93,7 +93,7 @@ Assembler.prototype.assemble = function(code, pass) {
       splitLine = line.split(/\s/);
       currentLabel = splitLine[0];
       
-      if ((this.labelMap[currentLabel] !== undefined) && (this.mode == 0)) {
+      if ((this.labelMap[currentLabel] !== undefined) && (this.mode === 0)) {
         return 'ERROR: Redefinition of ' + currentLabel + ' on line ' + lineNum + ' after being originally defined on line ' + this.labelMap[currentLabel];
       }
       
@@ -131,7 +131,7 @@ Assembler.prototype.assemble = function(code, pass) {
             asciiData += '\x00';
           }
           asciiData = asciiData.substr(0, asciiLength);
-          if ((asciiData.length % 2) == 1) {
+          if ((asciiData.length % 2) === 1) {
             asciiData += '\x00';
           }
 
@@ -239,7 +239,7 @@ Assembler.prototype.assemble = function(code, pass) {
           break;
         case 'pop':
           if ((rega === undefined)) {
-            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '')
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '');
           } else {
             this.ram[addr] = 0x0C00 | (rega << 4); 
             this.debug[addr] = rawLine;
@@ -247,7 +247,7 @@ Assembler.prototype.assemble = function(code, pass) {
           break;
         case 'push':
           if ((rega === undefined)) {
-            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '')
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '');
           } else {
             this.ram[addr] = 0x0D00 | (rega << 4); 
             this.debug[addr] = rawLine;
@@ -255,7 +255,7 @@ Assembler.prototype.assemble = function(code, pass) {
           break;
         case 'ior':
           if ((rega === undefined)) {
-            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '')
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '');
           } else {
             constant = this.stringToInt(splitLine[2]);
             if (isNaN(constant)) {
@@ -269,7 +269,7 @@ Assembler.prototype.assemble = function(code, pass) {
         case 'iow':
           if ((regb === undefined)) {
             //console.log('iow line=' + line);
-            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (regb === undefined ? splitLine[2] : '')
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (regb === undefined ? splitLine[2] : '');
           } else {
             if (isNaN(constant)) {
               return 'ERROR: Illegal constant "' + splitLine[1] + '" on line ' + lineNum;
@@ -289,7 +289,7 @@ Assembler.prototype.assemble = function(code, pass) {
           break;
         case 'addc':
           if ((rega === undefined)) {
-            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '')
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '');
           } else {
             constant = this.stringToInt(splitLine[2]);
             if (isNaN(constant)) {
@@ -310,7 +310,7 @@ Assembler.prototype.assemble = function(code, pass) {
           break;
         case 'subc':
           if ((rega === undefined)) {
-            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '')
+            return 'ERROR: Unknown register use on line ' + lineNum + ': ' + (rega === undefined ? splitLine[1] : '');
           } else {
             constant = this.stringToInt(splitLine[2]);
             if (isNaN(constant)) {
@@ -543,7 +543,7 @@ Assembler.prototype.stringToInt = function(string) {
     if (string.substr(0,2) === '\\x') {
       hex = string.substr(2,2);
       //console.log('h1=' + hex);
-      if (hex.length != 2) {
+      if (hex.length !== 2) {
         return NaN;
       }
       value = parseInt('0x' + hex, 16);
@@ -558,7 +558,7 @@ Assembler.prototype.stringToInt = function(string) {
       if (string.substr(0,2) === '\\x') {
         hex = string.substr(2,2);  
         //console.log('h2=' + hex);
-        if (hex.length != 2) {
+        if (hex.length !== 2) {
           return NaN;
         }
         value = (value << 8) | parseInt('0x' + hex, 16);
@@ -596,7 +596,7 @@ Assembler.prototype.genHex = function() {
     hex += ('0000' + aval.toString(16)).substr(-4);
   }
   this.hex = hex;
-}
+};
 
 
 
