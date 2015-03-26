@@ -2,8 +2,10 @@
 
 /*
 //Base Device
-function Device() {
-  this.name = 'EMPTY';
+function Device(name, id, cpu) {
+  this.name = name;
+  this.id = id;
+  this.cpu = cpu;
 };
 
 Device.prototype.reset = function() { };
@@ -25,15 +27,17 @@ Device.prototype.draw = function(ctx, x1, y1, x2, y2) { };
  * properties:
  * name - string
  * functions:
- * constructor(name)
+ * constructor(name, id, cpu)
  * reset()
  * read()
  * write(data)
- * draw(ctx, x1, y1, x2, y2)
+ * draw(ctx, x, y, w, h) - assusme a ctx.save() prefix and ctx.restore() suffix
 */
 
-function DeviceNull(name) {
+function DeviceNull(name, id, cpu) {
   this.name = name;
+  this.id = id;
+  this.cpu = cpu;
   this.value = 0;
 }
 
@@ -43,19 +47,62 @@ DeviceNull.prototype.read = function() { return this.value; };
 
 DeviceNull.prototype.write = function(data) { this.value = data & 0xFFFF };
 
-DeviceNull.prototype.draw = function(ctx, x1, y1, x2, y2) { };
+DeviceNull.prototype.draw = function(ctx, x, y, w, h) {
+  
+  ctx.fillStyle = 'rgb(' + ((this.value & 0x0F00) >> 4) + ',' + ((this.value & 0x00F0) >> 0) + ',' + ((this.value & 0x000F) << 4)+ ')';
 
-function DeviceDisplay(name) {
+  ctx.fillRect(x,y,w,h);
+  
+};
+
+function Device16Seg(name, id, cpu) {
   this.name = name;
+  this.id = id;
+  this.cpu = cpu;
+  this.baseAddress = 0x8000 | (id << 11);
 }
 
-DeviceDisplay.prototype.reset = function() { };
+Device16Seg.prototype.reset = function() { };
 
-DeviceDisplay.prototype.read = function() { };
+Device16Seg.prototype.read = function() { };
 
-DeviceDisplay.prototype.write = function(data) { };
+Device16Seg.prototype.write = function(data) { };
 
-DeviceDisplay.prototype.draw = function(ctx, x1, y1, x2, y2) { };
+Device16Seg.prototype.draw = function(ctx, x, y, w, h) {
+  
+  /*
+   * 01234567890123456789
+   */
+  
+  var hChars = 32;
+  var vChars = 16;
+  var charWidth = 6;
+  var charHeight = 12;
+  var totalChars = hChars * vChars;
+  var i;
+  var curChar;
+  var charX;
+  var charY;
+
+  ctx.fillStyle = '#000000';
+  ctx.translate(x,y);
+  ctx.fillRect(0, 0, hChars * charWidth, vChars * charHeight); 
+  
+  for (i = 0; i < totalChars; i++) {
+    curChar = this.cpu.ram[this.baseAddress + i] & 0x00FF;
+    charX = Math.floor(i % hChars) * charWidth;
+    charY = Math.floor(i / hChars) * charHeight;
+    ctx.fillStyle = '#00FF00';
+    ctx.fillRect(charX, charY, charWidth, charHeight);
+    ctx.font = '10px courier';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#000000';
+    var char = (curChar < 32) || (curChar > 126) ? '?' : String.fromCharCode(curChar);
+    ctx.fillText(char, charX, charY);
+    //ctx.fillText((i % 16).toString(16), charX, charY);
+  }
+  
+};
 
 
 
