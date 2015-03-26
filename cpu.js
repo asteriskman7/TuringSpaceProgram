@@ -45,7 +45,7 @@ Cpu.prototype.reset = function() {
   }
 
   this.regs[this.regMap.PC] = 0;
-  this.regs[this.regMap.SP] = 0;
+  this.regs[this.regMap.SP] = 0x8000;
   this.regs[this.regMap.AF] = this.rnd16bit();
   this.regs[this.regMap.IM] = this.rnd16bit();
   this.regs[this.regMap.SEG] = this.rnd16bit();
