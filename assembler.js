@@ -134,6 +134,12 @@ Assembler.prototype.assemble = function(code, pass) {
           if ((asciiData.length % 2) === 1) {
             asciiData += '\x00';
           }
+          
+          //need to set label here and prevent being set later because we're about to change the addr
+          if (currentLabel !== undefined) {
+            this.labelMap[currentLabel] = addr;
+            currentLabel = undefined;
+          }
 
           for (asciiIndex = 0; asciiIndex < asciiLength; asciiIndex = asciiIndex + 2) {
             this.ram[addr] = (asciiData.charCodeAt(asciiIndex) << 8) | (asciiData.charCodeAt(asciiIndex + 1));
@@ -147,6 +153,13 @@ Assembler.prototype.assemble = function(code, pass) {
           line = this.cleanLine(line);
           hexData = line.split(' ')[1];
           //console.log('hex data ' + hexData);
+          
+          //need to set label here and prevent being set later because we're about to change the addr
+          if (currentLabel !== undefined) {
+            this.labelMap[currentLabel] = addr;
+            currentLabel = undefined;
+          }
+          
           for (hexIndex = 0; hexIndex < hexData.length; hexIndex = hexIndex + 4) {
             nib0 = parseInt(hexData[hexIndex + 0], 16)|0;
             nib1 = parseInt(hexData[hexIndex + 1], 16)|0;
