@@ -7,16 +7,21 @@
     <!--
     <link href='./min.css' rel='stylesheet' type='text/css'>
     !-->
-
-    <script src='./cpuTest.js'></script>
+    
     <script src='./cpu.js'></script>
+    <script src='./assembler.js'></script>
+    <script src='./devices.js'></script>
+    <script src='./cpuTest.js'></script>
 
   </head>
-  <body>
+  <body style='background:#05123C; color:#FFFF00;'>
     <h1>TSP CPU Test</h1>
     <div id='div_cpu_info'></div>
     <div id='div_cpu_controls'>
+      <button type='button' id='button_run'>Run</button>
       <button type='button' id='button_step'>Step</button>
+      <button type='button' id='button_stop'>Stop</button>
     </div>
+    <canvas id='canvas_main' width='600' height='600' style='background:#FFFFFF;'>NO CANVAS SUPPORT</canvas>
   </body>
 </html>
