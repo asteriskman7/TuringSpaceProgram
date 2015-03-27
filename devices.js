@@ -83,21 +83,25 @@ Device16Seg.prototype.draw = function(ctx, x, y, w, h) {
   var curChar;
   var charX;
   var charY;
+  var char;
 
-  ctx.fillStyle = '#000000';
+  ctx.fillStyle = '#00FF00';
   ctx.translate(x,y);
   ctx.fillRect(0, 0, hChars * charWidth, vChars * charHeight); 
+  ctx.font = '10px courier';
+  ctx.textBaseline = 'top';
+  
   
   for (i = 0; i < totalChars; i++) {
     curChar = this.cpu.ram[this.baseAddress + i] & 0x00FF;
     charX = Math.floor(i % hChars) * charWidth;
     charY = Math.floor(i / hChars) * charHeight;
-    ctx.fillStyle = '#00FF00';
-    ctx.fillRect(charX, charY, charWidth, charHeight);
-    ctx.font = '10px courier';
-    ctx.textBaseline = 'top';
+    //ctx.fillStyle = '#00FF00';
+    //ctx.fillRect(charX, charY, charWidth, charHeight);
+    //ctx.font = '10px courier';
+    //ctx.textBaseline = 'top';
     ctx.fillStyle = '#000000';
-    var char = (curChar < 32) || (curChar > 126) ? '?' : String.fromCharCode(curChar);
+    char = (curChar < 32) || (curChar > 126) ? '?' : String.fromCharCode(curChar);
     ctx.fillText(char, charX, charY);
     //ctx.fillText((i % 16).toString(16), charX, charY);
   }
