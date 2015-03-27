@@ -7,7 +7,7 @@ var cputest = {
   cpu: undefined,
   div_cpu_info: undefined,
   ctx: undefined,
-  lastUpdateTime: new Date(),
+  lastUpdateTime: undefined,
   cpuFreq: 10,
   animationId: undefined,
   asm: undefined,
@@ -162,6 +162,7 @@ var cputest = {
     var rc = cputest.asm.assemble(code);
     console.log('asm rc =' + rc);
     cputest.cpu.ram = cputest.asm.ram;
+    cputest.asm = undefined;
     
     cputest.cpu.devices[0] = new DeviceNull('DevNull-0', 0, cputest.cpu);
     cputest.cpu.devices[1] = new Device16Seg('Dev16Seg-1', 1, cputest.cpu);
@@ -179,23 +180,25 @@ var cputest = {
 
   updateDisplay: function() {
     var i;
-    var HTML = '<pre>\n';
+    //var HTML = '';
+    //HTML = '<pre>\n';
     var pc = cputest.cpu.regs[cputest.cpu.pci];
     
-    HTML += 'cpuFreq (programmed/actual): ' + cputest.cpuFreq + '/' + cputest.cpuFreqMeas + '\n';
+    //HTML += 'cpuFreq (programmed/actual): ' + cputest.cpuFreq + '/' + cputest.cpuFreqMeas + '\n';
     
-    HTML += 'PC: ' + pc.toString(16) + ': ' + cputest.asm.debug[pc] + '\n';
-    HTML += 'REGS: ' + cputest.cpu.regs.toString() + '\n';
+    //HTML += 'PC: ' + pc.toString(16) + ': ' + cputest.asm.debug[pc] + '\n';
+    //HTML += 'REGS: ' + cputest.cpu.regs.toString() + '\n';
     
-    var regList = Object.keys(cputest.cpu.regMap);
-    for (i = 0; i < regList.length; i++) {
-      HTML += regList[i] + ':' + cputest.cpu.regs[cputest.cpu.regMap[regList[i]]].toString(16) + '\n';
-    }
+    //var regList = Object.keys(cputest.cpu.regMap);
+    //for (i = 0; i < regList.length; i++) {
+    //  HTML += regList[i] + ':' + cputest.cpu.regs[cputest.cpu.regMap[regList[i]]].toString(16) + '\n';
+    //}
     
     //HTML += 'RAM: ' + cputest.cpu.ram.toString() + '\n';
 
-    HTML += '</pre>';
-    cputest.div_cpu_info.innerHTML = HTML;
+    //HTML += '</pre>';
+    //cputest.div_cpu_info.innerHTML = HTML;
+    //cputest.div_cpu_info.textContent = HTML;
     
     var ctx = cputest.ctx;
     ctx.clearRect(0,0,600,600);
@@ -236,11 +239,17 @@ var cputest = {
   stop: function() {
     window.cancelAnimationFrame(cputest.animationId);
     cputest.animationId = undefined; 
+    cputest.lastUpdateTime = undefined;
   },
   
   tick: function() {
     var curTime = new Date();
-    var delta = (curTime - cputest.lastUpdateTime) / 1000;
+    var delta;
+    if (cputest.lastUpdateTime !== undefined) {
+      delta = (curTime - cputest.lastUpdateTime) / 1000;
+    } else {
+      delta = 1 / 60;
+    }
     
     //run cpu cycles and physics
     var deltaCycles = cputest.cpuFreq * delta;
