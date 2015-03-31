@@ -45,10 +45,12 @@ canvas {
 #textarea_code {
   overflow-x: scroll;
   height: 600px;
+  width: 500px;
   font-family: Courier New;
   font-size: 14px;
   resize: none;
   float: left;
+  white-space: nowrap;
 }
 
 #canvas_simulation {
