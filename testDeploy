@@ -12,3 +12,4 @@ cp -v *.js $DEST
 cp -v *.css $DEST
 cp -v *.png $DEST
 cp -v *.json $DEST
+cp -v *.ico $DEST
