@@ -72,7 +72,9 @@ Device16Seg.prototype.reset = function() { };
 
 Device16Seg.prototype.read = function() { };
 
-Device16Seg.prototype.write = function(data) { };
+Device16Seg.prototype.write = function(data) { 
+  /* jshint unused: false */
+};
 
 Device16Seg.prototype.draw = function(ctx, w, h) {
   
