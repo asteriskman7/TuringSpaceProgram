@@ -45,13 +45,19 @@ DeviceNull.prototype.reset = function() { };
 
 DeviceNull.prototype.read = function() { return this.value; };
 
-DeviceNull.prototype.write = function(data) { this.value = data & 0xFFFF };
+DeviceNull.prototype.write = function(data) { this.value = data & 0xFFFF; };
 
-DeviceNull.prototype.draw = function(ctx, x, y, w, h) {
+DeviceNull.prototype.draw = function(ctx, w, h) {
   
-  ctx.fillStyle = 'rgb(' + ((this.value & 0x0F00) >> 4) + ',' + ((this.value & 0x00F0) >> 0) + ',' + ((this.value & 0x000F) << 4)+ ')';
+  //ctx.fillStyle = 'rgb(' + ((this.value & 0x0F00) >> 4) + ',' + ((this.value & 0x00F0) >> 0) + ',' + ((this.value & 0x000F) << 4)+ ')';
+  ctx.strokeStyle = '#000000';
+  ctx.strokeRect(0,0,w,h);
+  ctx.font = '10px courier';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(this.name, w/2, h/2);
 
-  ctx.fillRect(x,y,w,h);
+  //ctx.fillRect(0,0,w,h);
   
 };
 
@@ -68,16 +74,17 @@ Device16Seg.prototype.read = function() { };
 
 Device16Seg.prototype.write = function(data) { };
 
-Device16Seg.prototype.draw = function(ctx, x, y, w, h) {
+Device16Seg.prototype.draw = function(ctx, w, h) {
   
   /*
    * 01234567890123456789
    */
-  
-  var hChars = 32;
-  var vChars = 16;
+
   var charWidth = 6;
-  var charHeight = 12;
+  var charHeight = 12;  
+  var hChars = Math.floor(w / charWidth);
+  var vChars = Math.floor(h / charHeight);
+
   var totalChars = hChars * vChars;
   var i;
   var curChar;
@@ -86,8 +93,7 @@ Device16Seg.prototype.draw = function(ctx, x, y, w, h) {
   var char;
 
   ctx.fillStyle = '#00FF00';
-  ctx.translate(x,y);
-  ctx.fillRect(0, 0, hChars * charWidth, vChars * charHeight); 
+  ctx.fillRect(0, 0, w, h); 
   ctx.font = '10px courier';
   ctx.textBaseline = 'top';
   
@@ -105,7 +111,6 @@ Device16Seg.prototype.draw = function(ctx, x, y, w, h) {
     ctx.fillText(char, charX, charY);
     //ctx.fillText((i % 16).toString(16), charX, charY);
   }
-  
 };
 
 

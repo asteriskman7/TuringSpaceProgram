@@ -1,13 +1,5 @@
 'use strict';
 
-function bin2hex(b) {
-  var result = '';
-  for (var i = 0; i < b.length; i++) {
-    result += ('00' + b.charCodeAt(i).toString(16)).substr(-2) + ' ';
-  }
-  return result;
-}
-
 function Assembler() {
   this.ram = [];
   this.debug = [];
