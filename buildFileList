@@ -1,5 +1,9 @@
 index.html
+attribution.html
 main.css
-main.js
 cpu.js
 assembler.js
+devices.js
+main.js
+favicon.ico
+physics.js
