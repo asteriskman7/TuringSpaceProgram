@@ -49,7 +49,7 @@ var main = {
     
     main.updateDisplay();
     
-    console.log('use main.assemble() and then main.tick() to run since there are no buttons yet.')
+    console.log('use main.assemble() and then main.tick() to run since there are no buttons yet.');
   },
   
   log: function(s) {
@@ -99,7 +99,7 @@ var main = {
     
     ctx.save();
     ctx.translate(0, 200);
-    main.physics.draw(ctx, 400, 400)
+    main.physics.draw(ctx, 400, 400);
     ctx.restore();
   },
   
