@@ -25,3 +25,5 @@ git push
 git checkout master
 
 git stash apply
+
+git stash drop
