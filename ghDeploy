@@ -8,6 +8,8 @@
 #  exit 1
 #fi
 
+git stash
+
 git checkout gh-pages
 
 git checkout master -- deployFileList
@@ -21,3 +23,5 @@ git commit
 git push
 
 git checkout master
+
+git stash apply
