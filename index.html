@@ -3,14 +3,48 @@
   <head>
     <meta charset='utf-8'>
     <title>Turing Space Program</title>
+    
+    <link rel='shortcut icon' href='./favicon.ico'>
 
-    <link href='./min.css' rel='stylesheet' type='text/css'>
+    <link href='./main.css' rel='stylesheet' type='text/css'>
 
-    <script src='./min.js'></script>
+    <!-- Don't use minified code while developing <script src='./min.js'></script> -->
+    <script src='./cpu.js'></script>
+    <script src='./assembler.js'></script>
+    <script src='./devices.js'></script>
+    <script src='./physics.js'></script>
+    <script src='./main.js'></script>
 
   </head>
   <body>
     <h1>Turing Space Program</h1>
-    change test
+    <div id='div_tab_wrapper'>
+      <div id='div_docs'>
+        docs
+      </div>
+      
+      <div id='div_game'>
+        <div>
+          <div id='div_linenumber_container'>
+            <div id='div_linenumbers'></div>
+          </div>
+          <textarea id='textarea_code' spellcheck='false'></textarea>
+        </div>
+        <div id='div_cpu_info'>
+        </div>
+        <canvas width='600' height='600' id='canvas_simulation'>NO CANVAS SUPPORT</canvas>
+        <div id='div_log'>
+          <textarea cols='73' rows='10' id='textarea_log' spellcheck='false' readonly=''></textarea>
+        </div>
+      </div>
+      
+      <div id='div_info'>
+        info
+      </div>
+    </div>
+    <!-- todo:
+      footer including copyright info
+      link to attributions page
+    -->
   </body>
 </html>

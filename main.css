@@ -4,7 +4,73 @@
 */
 
 body {
-  background-color: #000000;
-  color: #FFFFFF;
+  background-color: #06092C;
+  color: #EBEDCE;
 }
 
+canvas {
+  background-color: #FFFFFF;
+}
+
+#div_docs {
+  display: none;
+}
+
+#div_info {
+  display: none;
+}
+
+#div_linenumber_container {
+  width: 30px;
+  float: left;
+  color: #7E83BA;
+  font-family: Courier New;
+  font-size: 14px;
+  overflow: hidden;
+  height: 588px;
+  position: relative;
+  top: 0px;
+  text-align: right;
+  background: #D9DFFF;
+}
+
+#div_linenumbers {
+  width: 100%;
+  position: absolute;
+  text-align: right;
+  background: #D9DFFF;
+  top: 3px;
+}
+
+#textarea_code {
+  overflow-x: scroll;
+  height: 600px;
+  width: 500px;
+  font-family: Courier New;
+  font-size: 14px;
+  resize: none;
+  float: left;
+  white-space: nowrap;
+}
+
+#canvas_simulation {
+  background-color: #FFFFFF;
+  margin-left: 20px;
+}
+
+#div_log {
+  clear: both;
+  margin-top: 20px;
+  font-family: Courier New;
+  font-size: 14px;
+  resize: none;
+}
+
+#div_cpu_info {
+  float: left;
+  width: 10em;
+  height: 600px;
+  background: #FFFFFF;
+  color: #000000;
+  margin-left: 20px;
+}
