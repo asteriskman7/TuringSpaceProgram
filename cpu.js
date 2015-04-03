@@ -51,6 +51,7 @@ Cpu.prototype.reset = function() {
   this.regs[this.regMap.SEG] = this.rnd16bit();
   this.regs[this.regMap.JD] = this.rnd16bit();
   this.regs[this.regMap.ZERO] = 0;
+  this.cycles = 0;
   
 };
 
@@ -77,6 +78,7 @@ Cpu.prototype.tick = function() {
   var jumpDist;
   var device;
 
+  this.cycles += 1;
 
   switch (opClass) {
     case 0x0000: //load/store
