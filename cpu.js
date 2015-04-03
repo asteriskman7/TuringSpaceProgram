@@ -51,7 +51,13 @@ Cpu.prototype.reset = function() {
   this.regs[this.regMap.SEG] = this.rnd16bit();
   this.regs[this.regMap.JD] = this.rnd16bit();
   this.regs[this.regMap.ZERO] = 0;
-  this.cycles = 0;
+  this.cycles = 0;  
+  
+  for (i = 0; i < 16; i++) {
+    this.devices[i] = new DeviceNull('DevNull-' + i, i, this);
+  }
+  
+  
   
 };
 
