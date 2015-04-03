@@ -13,6 +13,7 @@
     <script src='./assembler.js'></script>
     <script src='./devices.js'></script>
     <script src='./physics.js'></script>
+    <script src='./levels.js'></script>
     <script src='./main.js'></script>
 
   </head>
@@ -24,6 +25,8 @@
       </div>
       
       <div id='div_game'>
+        <div id='div_level_name'>
+        </div>
         <div>
           <div id='div_linenumber_container'>
             <div id='div_linenumbers'></div>
@@ -33,6 +36,11 @@
         <div id='div_cpu_info'>
         </div>
         <canvas width='600' height='600' id='canvas_simulation'>NO CANVAS SUPPORT</canvas>
+        <div id='div_level_controls'>
+          <button type='button' id='button_assemble'>Assemble</button>
+          <button type='button' id='button_run'>Run</button>
+          <button type='button' id='button_stop'>Stop</button>          
+        </div>
         <div id='div_log'>
           <textarea cols='73' rows='10' id='textarea_log' spellcheck='false' readonly=''></textarea>
         </div>
@@ -43,8 +51,10 @@
       </div>
     </div>
     <!-- todo:
-      footer including copyright info
       link to attributions page
     -->
+    <div id='div_footer'>
+      &copy; asterisk_man 2015 - <a href='./attribution.html'>media usage attributions</a>
+    </div>
   </body>
 </html>

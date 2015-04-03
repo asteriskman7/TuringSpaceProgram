@@ -9,7 +9,8 @@ var main = {
   textarea_code: undefined,
   textarea_log: undefined,
   div_linenumbers: undefined,
-  stop: false,
+  stopFlag: false,
+  level: undefined,
   init: function() {
     console.log('main.init');
     
@@ -36,20 +37,25 @@ var main = {
       main.div_linenumbers.style.top = -(main.textarea_code.scrollTop - 3) + 'px';
     };
     
+    document.getElementById('button_run').onclick = main.run;
+    document.getElementById('button_assemble').onclick = main.assemble;
+    document.getElementById('button_stop').onclick = main.stop;
+    
     //set up game
     main.cpu = new Cpu();
+    main.physics = new Physics();
+    main.loadLevel('level0');
+    
+    /*
     for (i = 0; i < 16; i++) {
       main.cpu.devices[i] = new DeviceNull('DevNull-' + i, i, main.cpu);
     }
 
-    main.cpu.devices[1] = new Device16Seg('Dev16Seg-1', 1, main.cpu);
-    
-    
-    main.physics = new Physics();
+    main.cpu.devices[1] = new Device16Seg('Dev16Seg-1', 1, main.cpu);   
+    */
     
     main.updateDisplay();
     
-    console.log('use main.assemble() and then main.tick() to run since there are no buttons yet.');
   },
   
   log: function(s) {
@@ -60,6 +66,12 @@ var main = {
     }
   },
   
+  loadLevel: function(levelName) {
+    main.level = new levels[levelName](main.cpu, main.physics);
+    main.level.init();
+    document.getElementById('div_level_name').innerHTML = levelName;
+  },
+  
   assemble: function() {
     var code = main.textarea_code.value;
     main.asm = new Assembler();
@@ -68,7 +80,7 @@ var main = {
       rc = 'SUCCESS';
     }
     main.log('Assembly Result: ' + rc);
-    console.log('asm rc = ' + rc);
+    
     main.cpu.ram = main.asm.ram;
   },
   
@@ -103,9 +115,19 @@ var main = {
     ctx.restore();
   },
   
+  run: function() {
+    main.stopFlag = false;
+    window.requestAnimationFrame(main.tick);
+  },
+  
+  stop: function() {
+    main.stopFlag = true;
+  },
+  
   step: function() {
     main.cpu.tick();
     main.physics.tick(1);
+    main.level.check();
     main.updateDisplay();    
   },
   
@@ -124,12 +146,23 @@ var main = {
   },
   
   tick: function() {
+    var checkValue;
     //todo: run the correct amount of cpu and physics ticks
-    if (!main.stop) {
+    if (!main.stopFlag) {
       main.cpu.tick();
       main.physics.tick(1);
+      checkValue = main.level.check();
       main.updateDisplay();
-      window.requestAnimationFrame(main.tick);
+      if (checkValue === 0) {
+        window.requestAnimationFrame(main.tick);
+      } else {
+        main.stopFlag =  true;
+        if (checkValue > 0) {
+          main.log("SUCCESS");
+        } else {
+          main.log("FAILURE");
+        }
+      }
     }
   }
 };

@@ -74,3 +74,8 @@ canvas {
   color: #000000;
   margin-left: 20px;
 }
+
+#div_level_controls {
+  clear: both;
+  margin-top: 20px;
+}
