@@ -31,15 +31,19 @@
           <div id='div_linenumber_container'>
             <div id='div_linenumbers'></div>
           </div>
-          <textarea id='textarea_code' spellcheck='false'></textarea>
+          <textarea id='textarea_code' spellcheck='false' wrap='off'></textarea>
         </div>
-        <div id='div_cpu_info'>
+        <div id='div_cpu_info_container'>
+          <div id='div_pc_instr'></div>
+          <div id='div_cpu_info'>
+          </div>
         </div>
         <canvas width='600' height='600' id='canvas_simulation'>NO CANVAS SUPPORT</canvas>
         <div id='div_level_controls'>
           <button type='button' id='button_assemble'>Assemble</button>
           <button type='button' id='button_run'>Run</button>
           <button type='button' id='button_stop'>Stop</button>          
+          <button type='button' id='button_step'>Step</button>
         </div>
         <div id='div_log'>
           <textarea cols='73' rows='10' id='textarea_log' spellcheck='false' readonly=''></textarea>

@@ -1,6 +1,7 @@
 'use strict';
 
 var main = {
+  state: undefined,
   cpuFreq: 10,
   ctx: undefined,
   cpu: undefined,
@@ -11,8 +12,12 @@ var main = {
   div_linenumbers: undefined,
   stopFlag: false,
   level: undefined,
+  lastTick: 0,
+  deltaCycles: 0,
   init: function() {
     console.log('main.init');
+    
+    main.loadState();
     
     //save commonly used elements
     main.textarea_code = document.getElementById('textarea_code');
@@ -40,22 +45,37 @@ var main = {
     document.getElementById('button_run').onclick = main.run;
     document.getElementById('button_assemble').onclick = main.assemble;
     document.getElementById('button_stop').onclick = main.stop;
+    document.getElementById('button_step').onclick = main.step;
     
     //set up game
     main.cpu = new Cpu();
     main.physics = new Physics();
-    main.loadLevel('level0');
-    
-    /*
-    for (i = 0; i < 16; i++) {
-      main.cpu.devices[i] = new DeviceNull('DevNull-' + i, i, main.cpu);
-    }
-
-    main.cpu.devices[1] = new Device16Seg('Dev16Seg-1', 1, main.cpu);   
-    */
+    main.loadLevel(main.state.level);
     
     main.updateDisplay();
     
+  },
+  
+  loadDefaultState: function() {
+    main.state = {
+      level: 'level0',
+      code: {}
+    };
+  },
+  
+  loadState: function() {
+    var key;
+    var loadedState = JSON.parse(localStorage.getItem('state'));
+    main.loadDefaultState();
+    for (key in loadedState) {
+      main.state[key] = loadedState[key];
+    }
+  },
+  
+  saveState: function() {
+    var jsonState = JSON.stringify(main.state);
+    localStorage.clear();
+    localStorage.setItem('state', jsonState);    
   },
   
   log: function(s) {
@@ -67,13 +87,21 @@ var main = {
   },
   
   loadLevel: function(levelName) {
+    main.state.level = levelName;
     main.level = new levels[levelName](main.cpu, main.physics);
     main.level.init();
-    document.getElementById('div_level_name').innerHTML = levelName;
+    document.getElementById('div_level_name').innerHTML = levelName;    
+    var levelCode = main.state.code[main.state.level];
+    if (levelCode === undefined) {
+      levelCode = '';
+    }
+    main.textarea_code.value = levelCode;        
   },
   
   assemble: function() {
     var code = main.textarea_code.value;
+    main.state.code[main.state.level] = code;
+    main.saveState();
     main.asm = new Assembler();
     var rc = main.asm.assemble(code);
     if (rc.length === 0) {
@@ -81,7 +109,9 @@ var main = {
     }
     main.log('Assembly Result: ' + rc);
     
+    main.cpu.reset();
     main.cpu.ram = main.asm.ram;
+    main.level.postAsm();
   },
   
   updateDisplay: function() {
@@ -118,23 +148,40 @@ var main = {
   run: function() {
     main.stopFlag = false;
     window.requestAnimationFrame(main.tick);
+    main.lastTick = 0;
+    main.deltaCycles = 0;
   },
   
   stop: function() {
     main.stopFlag = true;
+    main.dumpCpu();
+    main.lastTick = 0;
   },
   
   step: function() {
+    var checkValue;
     main.cpu.tick();
-    main.physics.tick(1);
-    main.level.check();
+    main.physics.tick(1 / (main.cpuFreq));
+    checkValue = main.level.check();
     main.updateDisplay();    
+    main.dumpCpu();
+    if (checkValue > 0) {
+      main.log('SUCCESS');
+    } else if (checkValue < 0) {
+      main.lg('FAILURE');
+    }
   },
   
   dumpCpu: function() {
     var html = '';
     var pc = main.cpu.regs[main.cpu.regMap.PC];
-    html += 'PC: ' + pc.toString(16) + ': ' + main.asm.debug[pc] + '<br>';
+    
+    var e = document.getElementById('div_pc_instr');
+    e.innerHTML = 'PC: ' + pc.toString(16) + ': ' + main.asm.debug[pc];
+    e.title = main.asm.debug[pc];
+    
+    //html += 'PC: ' + pc.toString(16) + ': ' + main.asm.debug[pc] + '<br>';
+    
         
     var regList = Object.keys(main.cpu.regMap);
     var i;
@@ -146,17 +193,34 @@ var main = {
   },
   
   tick: function() {
-    var checkValue;
+    var checkValue = 0;
+    var curTime = new Date();
+    //deltaTime is in seconds
+    var deltaTime = (curTime - main.lastTick) / 1000;
+    deltaTime = Math.min(deltaTime, 1/60);
     //todo: run the correct amount of cpu and physics ticks
+    
     if (!main.stopFlag) {
-      main.cpu.tick();
-      main.physics.tick(1);
-      checkValue = main.level.check();
+      main.deltaCycles += main.cpuFreq * deltaTime;
+      var curDeltaCycles = Math.floor(main.deltaCycles);
+      var i;
+      for (i = 0; i < curDeltaCycles; i++) {
+        main.cpu.tick();
+        main.physics.tick(1/main.cpuFreq);
+        checkValue = main.level.check();
+        if (checkValue !== 0) {
+          break;
+        }
+      }
+      main.deltaCycles -= curDeltaCycles;
       main.updateDisplay();
+      //main.dumpCpu();
       if (checkValue === 0) {
+        main.lastTick = new Date();
         window.requestAnimationFrame(main.tick);
       } else {
         main.stopFlag =  true;
+        main.lastTick = 0;
         if (checkValue > 0) {
           main.log("SUCCESS");
         } else {

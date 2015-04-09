@@ -50,7 +50,7 @@ canvas {
   font-size: 14px;
   resize: none;
   float: left;
-  white-space: nowrap;
+  /* white-space: nowrap;*/
 }
 
 #canvas_simulation {
@@ -66,13 +66,20 @@ canvas {
   resize: none;
 }
 
-#div_cpu_info {
+#div_cpu_info_container {
   float: left;
   width: 10em;
   height: 600px;
   background: #FFFFFF;
   color: #000000;
   margin-left: 20px;
+  font-family: Courier New;
+  font-size: 14px;
+}
+
+#div_pc_instr {
+  white-space: nowrap;
+  overflow-x: hidden;
 }
 
 #div_level_controls {
