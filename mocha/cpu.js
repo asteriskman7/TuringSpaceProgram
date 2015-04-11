@@ -1,6 +1,6 @@
 var assert = require('assert');
 var Cpu = require('../cpu.js');
-var DeviceNull = require('../devices.js');
+global.DeviceNull = require('../devices.js');
 
 var dut = new Cpu();
 
@@ -1160,19 +1160,38 @@ describe('Cpu', function() {
       var intNum = rnd16bit() & 0xF;
       var jumpAddr = intNum;
       var JDend = rnd16bit();
+      var IM = rnd16bit();
+      var SP = rnd16bit();      
+      var finalSP = (SP - 1) & 0xFFFF;
+      var stackOrigValue = rnd16bit();      
+      var stackValue = (startAddr + 1) & 0xFFFF;
+      if (((IM >> intNum) & 0x01) !== 1) {
+        jumpAddr = (startAddr + 1) & 0xFFFF;
+        stackValue = stackOrigValue;
+        finalSP = SP;
+      }
 
       before(function() {
         dut = new Cpu();
         dut.regs[dut.regMap.JD] = JDend;
         dut.ram[startAddr] = 0x3800 | (intNum << 4);
         dut.regs[dut.pci] = startAddr;
-        dut.tick();
+        dut.regs[dut.regMap.IM] = IM;   
+        dut.ram[finalSP] = stackOrigValue;
+        dut.regs[dut.regMap.SP] = SP;
+        dut.tick();        
       });
       it('should contain ' + jumpAddr + ' in PC', function() {
         assert.equal(dut.regs[dut.pci], jumpAddr);
       });
       it('should contain ' + JDend + ' in JD', function() {
         assert.equal(dut.regs[dut.regMap.JD], JDend);
+      });
+      it('should contain ' + finalSP + ' in SP', function() {
+        assert.equal(dut.regs[dut.regMap.SP], finalSP);
+      });
+      it('should contain ' + stackValue + ' in stack', function() {
+        assert.equal(dut.ram[finalSP], stackValue); 
       });
     });
 
