@@ -25,7 +25,7 @@ function Cpu() {
     ZERO: 15
   };
   
-  this.devices = [];
+  this.devices = [];  
 
   this.reset();
 
@@ -57,7 +57,7 @@ Cpu.prototype.reset = function() {
     this.devices[i] = new DeviceNull('DevNull-' + i, i, this);
   }
   
-  
+  this.irqs = 0x00;   
   
 };
 
@@ -83,8 +83,22 @@ Cpu.prototype.tick = function() {
   var jumpMask;
   var jumpDist;
   var device;
+  var hwIntServiced = false;
+  var maskedIrqs = this.irqs & (this.regs[this.regMap.IM] >> 4);
 
   this.cycles += 1;
+  
+  if (maskedIrqs !== 0x00) {
+    for (i = 0; i < 16; i++) {
+      if ((maskedIrqs & 1) === 1) {
+        this.regs[this.regMap.SP] = (this.regs[this.regMap.SP] - 1) & 0xFFFF;
+        this.ram[this.regs[this.regMap.SP]] = this.regs[this.pci];
+        this.regs[this.pci] = 0x0010 | i;        
+        return;
+      }
+      maskedIrqs = maskedIrqs >> 1;
+    }
+  }
 
   switch (opClass) {
     case 0x0000: //load/store
@@ -324,8 +338,13 @@ Cpu.prototype.tick = function() {
           }
           break;
         case 0x0800: //int
-          this.regs[this.pci] = opArgA;
-          pcJump = true;
+          //only fire if the opArg'th bit is a 1
+          if ((this.regs[this.regMap.IM] >> opArgA) & 0x01 === 1) {
+            this.regs[this.regMap.SP] = (this.regs[this.regMap.SP] - 1) & 0xFFFF;
+            this.ram[this.regs[this.regMap.SP]] = (this.regs[this.pci] + 1) & 0xFFFF;
+            this.regs[this.pci] = opArgA;
+            pcJump = true;
+          }
           break;
         default:
           this.opcodeError(opcode);
