@@ -50,12 +50,13 @@ canvas {
   font-size: 14px;
   resize: none;
   float: left;
-  /* white-space: nowrap;*/
+  margin-bottom: 20px;
 }
 
 #canvas_simulation {
   background-color: #FFFFFF;
   margin-left: 20px;
+  border: 3px ridge #EBEDCE;
 }
 
 #div_log {
@@ -69,10 +70,11 @@ canvas {
 #div_cpu_info_container {
   float: left;
   width: 10em;
-  height: 600px;
+  height: 100%;
   background: #FFFFFF;
   color: #000000;
   margin-left: 20px;
+  margin-bottom: 20px;
   font-family: Courier New;
   font-size: 14px;
 }
@@ -84,5 +86,17 @@ canvas {
 
 #div_level_controls {
   clear: both;
-  margin-top: 20px;
+  padding-top: 20px;
+}
+
+#div_gamespace {
+  height: 606px;
+}
+
+#div_canvas_container {
+  float: left;
+}
+
+#div_code_and_lines_container {
+  min-width: 536px;
 }
