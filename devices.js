@@ -50,13 +50,18 @@ DeviceNull.prototype.write = function(data) { this.value = data & 0xFFFF; };
 DeviceNull.prototype.draw = function(ctx, w, h) {
   
   //ctx.fillStyle = 'rgb(' + ((this.value & 0x0F00) >> 4) + ',' + ((this.value & 0x00F0) >> 0) + ',' + ((this.value & 0x000F) << 4)+ ')';
+  //ctx.fillStyle = '#FFFFFF';
+  //ctx.fillRect(0,0,w,h);
+  ctx.clearRect(0,0,w,h);
   ctx.strokeStyle = '#000000';
   ctx.strokeRect(0,0,w,h);
   ctx.font = '10px courier';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#000000';
   ctx.fillText(this.name, w/2, h/2);
 
+  //ctx.fillStyle = '#FFFFFF';
   //ctx.fillRect(0,0,w,h);
   
 };
