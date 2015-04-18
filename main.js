@@ -58,7 +58,7 @@ var main = {
   
   loadDefaultState: function() {
     main.state = {
-      level: 'level0',
+      level: 'level2',
       code: {}
     };
   },
@@ -117,7 +117,12 @@ var main = {
   updateDisplay: function() {
     var i;
     var ctx = main.ctx;
-    ctx.clearRect(0,0,600,600);
+    ctx.clearRect(0,0,600,600);    
+    
+    ctx.save();
+    ctx.translate(0, 200);
+    main.physics.draw(ctx, 400, 400);
+    ctx.restore();    
     
     var device;
     var deviceLocations = {
@@ -139,10 +144,6 @@ var main = {
       }      
     }
     
-    ctx.save();
-    ctx.translate(0, 200);
-    main.physics.draw(ctx, 400, 400);
-    ctx.restore();
   },
   
   run: function() {
