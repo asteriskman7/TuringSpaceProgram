@@ -51,3 +51,25 @@ levels.level1.prototype.check = function() {
     return 0;
   }
 };
+
+levels.level2 = function(cpu, physics) {
+  this.cpu = cpu;
+  this.physics = physics;
+}
+
+levels.level2.prototype.init = function() {
+  //add some physics bodies
+  console.log('level2 init');
+  this.physics.new(0, 0, 1e4, 'planet', {name: 'planet0'});
+  this.physics.new(50, 50, 10, 'body', {name: 'body0', xv: 0, yv: 0});
+}
+
+levels.level2.prototype.postAsm = function() {}
+
+levels.level2.prototype.check = function() {
+  //check if certain physics body location is correct
+  if (this.physics.objects['body0'] === undefined) {
+    return 1;
+  }
+  return 0;
+}
