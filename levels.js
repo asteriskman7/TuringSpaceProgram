@@ -1,5 +1,34 @@
 'use strict';
 
+/*
+Level Tree
+
+Part 1 - kid
+learn the basics of the cpu and assembly language culmanating in use of physics system
+1 loading registers and ram
+2 using alu
+3 using jump and call/ret
+4 using devices for I/O
+5 using devices to control simple physics system
+
+Part 2 - intern
+learn how to use the physics system in more detail culmanating in ?
+1 
+2
+3
+4
+5
+
+Part 3 - TASA engineer
+use the physics system to run a series of programs to help Turings visit the stars
+1
+2
+3
+4
+5
+
+*/
+
 var levels = {};
 
 levels.level0 = function(cpu, physics) {
